@@ -77,29 +77,6 @@ class Openprovider extends RegistrarModule
     }
 
     /**
-     * The methods are invoked when the module is installed, upgraded, or uninstalled respectively.
-     *
-     * @return void
-     *
-     * @see https://docs.blesta.com/display/dev/Module+Methods#ModuleMethods-install/upgrade/uninstall()
-     */
-    public function install(): void
-    {}
-
-    /**
-     * The methods are invoked when the module is installed, upgraded, or uninstalled respectively.
-     *
-     * @param $module_id
-     * @param $last_instance
-     *
-     * @return void
-     *
-     * @see https://docs.blesta.com/display/dev/Module+Methods#ModuleMethods-install/upgrade/uninstall()
-     */
-    public function uninstall($module_id, $last_instance): void
-    {}
-
-    /**
      * @param mixed $module
      * @param array $vars
      *
@@ -1969,8 +1946,8 @@ class Openprovider extends RegistrarModule
 
         $api->getConfig()->setHost($test_mode == 'true' ? OpenProviderApi::API_CTE_URL : OpenProviderApi::API_URL);
 
-        $token = $api->call('generateAuthTokenRequest', ['username' => $username, 'password' => $password])
-                ->getData()['token'] ?? '';
+        $response = $api->call('generateAuthTokenRequest', ['username' => $username, 'password' => $password]);
+        $token = $response->getData()['token'] ?? '';
 
         $this->logRequest($api);
 
@@ -2152,7 +2129,7 @@ class Openprovider extends RegistrarModule
      *
      * @see https://docs.blesta.com/display/dev/Module+Methods#ModuleMethods-getServiceDomain($service)
      */
-    public function getServiceDomain(stdClass $service): string
+    public function getServiceDomain($service): string
     {
         if (isset($service->fields)) {
             foreach ($service->fields as $field) {
