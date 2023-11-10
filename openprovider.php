@@ -1963,6 +1963,164 @@ class Openprovider extends RegistrarModule
     }
 
     /**
+     * Get a list of the TLD prices
+     *
+     * @param int $module_row_id The ID of the module row to fetch for the current module
+     * @return array A list of all TLDs and their pricing
+     *    [tld => [currency => [year# => ['register' => price, 'transfer' => price, 'renew' => price]]]]
+     */
+    public function getTldPricing($module_row_id = null)
+    {
+        return $this->getFilteredTldPricing($module_row_id);
+    }
+
+    /**
+     * Get a filtered list of the TLD prices
+     *
+     * @param int $module_row_id The ID of the module row to fetch for the current module
+     * @param array $filters A list of criteria by which to filter fetched pricings including but not limited to:
+     *
+     *  - tlds A list of tlds for which to fetch pricings
+     *  - currencies A list of currencies for which to fetch pricings
+     *  - terms A list of terms for which to fetch pricings
+     * @return array A list of all TLDs and their pricing
+     *    [tld => [currency => [year# => ['register' => price, 'transfer' => price, 'renew' => price]]]]
+     */
+    public function getFilteredTldPricing($module_row_id = null, $filters = [])
+    {
+        $this->setModuleRow($this->getModuleRow($module_row_id));
+        $tld_prices = $this->getPrices();
+        $tld_yearly_prices = [];
+        foreach ($tld_prices as $tld => $currency_prices) {
+            $tld_yearly_prices[$tld] = [];
+            foreach ($currency_prices as $currency => $prices) {
+                $tld_yearly_prices[$tld][$currency] = [];
+                foreach (range(1, 10) as $years) {
+                    // Filter by 'terms'
+                    if (isset($filters['terms']) && !in_array($years, $filters['terms'])) {
+                        continue;
+                    }
+
+                    $tld_yearly_prices[$tld][$currency][$years] = [
+                        'register' => $prices->registration * $years,
+                        'transfer' => $prices->transfer * $years,
+                        'renew' => $prices->renew * $years
+                    ];
+                }
+            }
+        }
+
+        return $tld_yearly_prices;
+    }
+
+    /**
+     * Retrieves all the Namesilo prices
+     *
+     * @param array $filters A list of criteria by which to filter fetched pricings including but not limited to:
+     *
+     *  - tlds A list of tlds for which to fetch pricings
+     *  - currencies A list of currencies for which to fetch pricings
+     * @return array An array containing all the TLDs with their respective prices
+     */
+    protected function getPrices(array $filters = [])
+    {
+        // Fetch the TLDs results from the cache, if they exist
+        $cache = Cache::fetchCache(
+            'tlds_prices',
+            Configure::get('Blesta.company_id') . DS . 'modules' . DS . 'openprovider' . DS
+        );
+
+        if ($cache) {
+            $result = unserialize(base64_decode($cache));
+        }
+
+        Loader::loadModels($this, ['Currencies']);
+
+        if (!isset($result)) {
+            $row = $this->getRow();
+            $api = $this->getApi($row->meta->username, $row->meta->password, $row->meta->test_mode == 'true');
+
+            $extension_response = $api->call('searchExtensionRequest', ['with_price' => true]);
+            $this->logRequest($api);
+
+            if ($extension_response->getCode() != 0) {
+                $this->assignError($extension_response->getMessage());
+
+                return [];
+            }
+
+            // Save the TLDs results to the cache
+            $result = $extension_response->getData();
+            if (Configure::get('Caching.on') && is_writable(CACHEDIR)) {
+                try {
+                    Cache::writeCache(
+                        'tlds_prices',
+                        base64_encode(serialize($result)),
+                        strtotime(Configure::get('Blesta.cache_length')) - time(),
+                        Configure::get('Blesta.company_id') . DS . 'modules' . DS . 'openprovider' . DS
+                    );
+                } catch (Exception $e) {
+                    // Write to cache failed, so disable caching
+                    Configure::set('Caching.on', false);
+                }
+            }
+        }
+
+        $tlds = [];
+        if (isset($result['results'])) {
+            $tlds = $result['results'];
+        }
+
+        // Get all currencies
+        $currencies = $this->Currencies->getAll(Configure::get('Blesta.company_id'));
+
+        // Convert namesilo prices to all currencies
+        $pricing = [];
+
+        foreach ($tlds as $tld_details) {
+            $tld = '.' . trim($tld_details['name'], '.');
+
+            // Filter by 'tlds'
+            if (isset($filters['tlds']) && !in_array($tld, $filters['tlds'])) {
+                continue;
+            }
+
+            foreach ($currencies as $currency) {
+                // Filter by 'currencies'
+                if (isset($filters['currencies']) && !in_array($currency->code, $filters['currencies'])
+                        || !isset($tld_details['prices']['create_price'])) {
+                    continue;
+                }
+
+                $pricing[$tld][$currency->code] = (object) [
+                    'registration' => $this->Currencies->convert(
+                        $tld_details['prices']['create_price']['product']['price'],
+                        $tld_details['prices']['create_price']['product']['currency'],
+                        $currency->code,
+                        Configure::get('Blesta.company_id')
+                    ),
+                    'transfer' => isset ($tld_details['prices']['renew_price'])
+                        ? $this->Currencies->convert(
+                            $tld_details['prices']['transfer_price']['product']['price'],
+                            $tld_details['prices']['transfer_price']['product']['currency'],
+                            $currency->code,
+                            Configure::get('Blesta.company_id')
+                        ) : 0,
+                    'renew' => isset ($tld_details['prices']['renew_price'])
+                        ? $this->Currencies->convert(
+                            $tld_details['prices']['renew_price']['product']['price'],
+                            $tld_details['prices']['renew_price']['product']['currency'],
+                            $currency->code,
+                            Configure::get('Blesta.company_id')
+                        ) : 0
+                ];
+            }
+        }
+
+        return $pricing;
+    }
+
+    /**
      * @return mixed|null the OpenProvider first row
      */
     private function getRow()
