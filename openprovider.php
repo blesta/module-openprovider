@@ -663,7 +663,7 @@ class Openprovider extends RegistrarModule
             return;
         }
 
-        $resembling_customers = $search_customer_request->getData()['results'];
+        $resembling_customers = (array)$search_customer_request->getData()['results'];
 
         // false if similar customer not exist else handle
         $handle = false;
