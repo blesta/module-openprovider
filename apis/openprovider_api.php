@@ -16,7 +16,7 @@ class OpenProviderApi
 {
     const API_CLIENT_NAME = 'blesta-v1';
     const API_URL = 'https://api.openprovider.eu';
-    const API_CTE_URL = 'https://api.cte.openprovider.eu';
+    const API_CTE_URL = 'http://api.sandbox.openprovider.nl:8480';
 
     /**
      * @var Configuration

@@ -1,9 +1,13 @@
 {
-    "version": "0.0.5",
+    "version": "1.0.0",
     "name": "OpenProvider.config.name",
     "type": "registrar",
     "description": "OpenProvider.config.description",
     "authors": [
+        {
+            "name": "Phillips Data, Inc.",
+            "url": "https://blesta.com/"
+        },
         {
             "name": "Openprovider",
             "url": "https://openprovider.com/"
@@ -28,6 +32,6 @@
     "email_tags": {
         "module": [],
         "package": [],
-        "service": []
+        "service": ["domain"]
     }
 }
