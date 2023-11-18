@@ -2275,6 +2275,96 @@ class Openprovider extends RegistrarModule
     }
 
     /**
+     * Gets a list of name server data associated with a domain
+     *
+     * @param string $domain The domain to lookup
+     * @param int $module_row_id The ID of the module row to fetch for the current module
+     * @return array A list of name servers, each with the following fields:
+     *
+     *  - url The URL of the name server
+     *  - ips A list of IPs for the name server
+     */
+    public function getDomainNameServers($domain, $module_row_id = null)
+    {
+        $row = $this->getModuleRow($module_row_id);
+        $api = $this->getApi($row->meta->username, $row->meta->password, $row->meta->test_mode == 'true');
+
+        $domain_response = $api->call('searchDomainRequest', [
+            'full_name' => $domain
+        ]);
+        $this->logRequest($api);
+
+        $domain_request_failed = $domain_response->getCode() != 0;
+
+        if ($domain_request_failed) {
+            $this->assignError($domain_response->getMessage());
+
+            return [];
+        }
+
+        if ($this->checkIfDomainDoesNotExistInSearchDomainResponse($domain_response)) {
+            $this->assignError(Language::_('OpenProvider.!error.domain.not_exist', true));
+
+            return [];
+        }
+
+        $op_domain = $domain_response->getData()['results'][0];
+        $nameservers = array_map(function ($name_server) {
+                return [
+                    'url' => trim($name_server['name']),
+                    'ips' => [gethostbyname(trim($name_server['name']))]
+                ];
+            }, $op_domain['name_servers']);
+
+        return $nameservers;
+    }
+
+    /**
+     * Assign new name servers to a domain
+     *
+     * @param string $domain The domain for which to assign new name servers
+     * @param int|null $module_row_id The ID of the module row to fetch for the current module
+     * @param array $vars A list of name servers to assign (e.g. [ns1, ns2])
+     * @return bool True if the name servers were successfully updated, false otherwise
+     */
+    public function setDomainNameservers($domain, $module_row_id = null, array $vars = [])
+    {
+        $row = $this->getModuleRow($module_row_id);
+        $api = $this->getApi($row->meta->username, $row->meta->password, $row->meta->test_mode == 'true');
+
+        $domain_response = $api->call('searchDomainRequest', [
+            'full_name' => $domain
+        ]);
+        $this->logRequest($api);
+
+        $domain_request_failed = $domain_response->getCode() != 0;
+
+        if ($domain_request_failed) {
+            $this->assignError($domain_response->getMessage());
+
+            return false;
+        }
+
+        if ($this->checkIfDomainDoesNotExistInSearchDomainResponse($domain_response)) {
+            $this->assignError(Language::_('OpenProvider.!error.domain.not_exist', true));
+
+            return false;
+        }
+
+        $op_domain = $domain_response->getData()['results'][0];
+
+        $response = $this->modifyNameServersInOpenProvider($api, $op_domain['id'], $vars);
+
+        if ($response->getCode() != 0) {
+            $this->assignError($response->getMessage());
+
+            return false;
+        }
+        
+        return true;
+    }
+
+    /**
      * Make array with partials of phone number. Phone number should be +NNN.NNNNNNNNNN format
      *
      * @param $phone
