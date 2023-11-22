@@ -1,4 +1,4 @@
-# Internet.bs Module
+# Openprovider Module
 
 [![Build Status](https://travis-ci.org/blesta/module-openprovider.svg?branch=master)](https://travis-ci.org/blesta/module-openprovider) [![Coverage Status](https://coveralls.io/repos/github/blesta/module-openprovider/badge.svg?branch=master)](https://coveralls.io/github/blesta/module-openprovider?branch=master)
 

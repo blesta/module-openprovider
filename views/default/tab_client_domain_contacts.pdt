@@ -1,7 +1,3 @@
-<?php
-        echo $this->Html->ifSet( $vars->debug );
-        ?>
-
 <?php $this->Form->create(); ?>
 
 <div class="row panel-fix">
@@ -17,9 +13,9 @@
                     <?php
 
                         if ($key == 'country') {
-                            $this->Form->fieldSelect( $contact_type . '_' . $key, Configure::get('OpenProvider.dict.countries'), $this->Html->ifSet( $value ),  [ 'id' => $contact_type . '_' . $key, 'class' => 'form-control', 'placeholder' => $this->_( 'OpenProvider.tab_domain_contacts.field.' . $key, true ) ] );
+                            $this->Form->fieldSelect( $contact_type . '_' . $key, Configure::get('OpenProvider.dict.countries'), ($value ?? null),  [ 'id' => $contact_type . '_' . $key, 'class' => 'form-control', 'placeholder' => $this->_( 'OpenProvider.tab_domain_contacts.field.' . $key, true ) ] );
                         } else {
-                            $this->Form->fieldText( $contact_type . '_' . $key, $this->Html->ifSet( $value ),  [ 'id' => $contact_type . '_' . $key, 'class' => 'form-control', 'placeholder' => $this->_( 'OpenProvider.tab_domain_contacts.field.' . $key, true ) ] );
+                            $this->Form->fieldText( $contact_type . '_' . $key, ($value ?? null),  [ 'id' => $contact_type . '_' . $key, 'class' => 'form-control', 'placeholder' => $this->_( 'OpenProvider.tab_domain_contacts.field.' . $key, true ) ] );
                         }
 
                     ?>

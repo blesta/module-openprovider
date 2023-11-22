@@ -5,7 +5,7 @@
             <?php if (isset($vars->epp) && $vars->epp) { ?>
                 <li>
                     <?php $this->Form->label( $this->_( 'OpenProvider.tab_settings.field.epp', true ), 'epp' ); ?>
-                    <?php $this->Form->fieldText( 'epp', $this->Html->ifSet( $vars->epp ),  [ 'id' => 'epp', 'class' => 'form-control epp-input', 'placeholder' => $this->_( 'OpenProvider.tab_settings.field.epp', true ), 'disabled' => 'true', 'type' => 'password' ] ); ?>
+                    <?php $this->Form->fieldText( 'epp', ($vars->epp ?? null),  [ 'id' => 'epp', 'class' => 'form-control epp-input', 'placeholder' => $this->_( 'OpenProvider.tab_settings.field.epp', true ), 'disabled' => 'true', 'type' => 'password' ] ); ?>
                     <span class="input-group-text show-hide-epp btn"><i class="fa fa-eye"></i></span>
                     <span class="input-group-text generate-new-epp btn" data-toggle="tooltip" data-html="true" title="reset your auth code"><i class="fa fa-repeat"></i></span>
                     <?php $this->Form->fieldHidden( 'generate-new-epp', '',  [ 'id' => 'generate-new-epp' ] ); ?>

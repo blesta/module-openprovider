@@ -179,7 +179,7 @@ class OpenProviderApi
     /**
      * @return LastRequest
      */
-    public function getLastRequest(): LastRequest
+    public function getLastRequest(): ?LastRequest
     {
         return $this->last_request;
     }
@@ -187,7 +187,7 @@ class OpenProviderApi
     /**
      * @return Response
      */
-    public function getLastResponse(): Response
+    public function getLastResponse(): ?Response
     {
         return $this->last_response;
     }

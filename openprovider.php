@@ -66,7 +66,7 @@ class Openprovider extends RegistrarModule
         $this->default_module_view_path = 'components' . DS . 'modules' . DS . self::MODULE_NAME . DS;
 
         if (is_null($this->getModule())) {
-            $modules = $this->ModuleManager->getInstalled();
+            $modules = $this->ModuleManager->getInstalled(['company_id' => Configure::get('Blesta.company_id')]);
             foreach ($modules as $module) {
                 if (strtolower($module->name) == self::MODULE_NAME) {
                     $this->setModule($module);
@@ -1351,13 +1351,12 @@ class Openprovider extends RegistrarModule
 
                 return $this->render($vars);
             }
+            $this->logRequest($api);
         } else {
             $vars->ns = array_map(function ($name_server) {
                 return $name_server['name'];
             }, $op_domain['name_servers']);
         }
-
-        $this->logRequest($api);
 
         return $this->render($vars);
     }
@@ -2014,7 +2013,7 @@ class Openprovider extends RegistrarModule
     }
 
     /**
-     * Retrieves all the Namesilo prices
+     * Retrieves all the Openprovider prices
      *
      * @param array $filters A list of criteria by which to filter fetched pricings including but not limited to:
      *
@@ -2422,17 +2421,5 @@ class Openprovider extends RegistrarModule
     private function checkIfServiceStatusIssetAndActive($service): bool
     {
         return isset($service->status) && $service->status == 'active';
-    }
-
-    /**
-     * function print data
-     *
-     * @param ...$args
-     */
-    private function debug(...$args)
-    {
-        echo '<pre>';
-        var_dump(...$args);
-        echo '</pre>';
     }
 }
