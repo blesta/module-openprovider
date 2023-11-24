@@ -13,9 +13,9 @@ foreach ($vars->domain_contacts as $contact_type => $domain_contact) {
             <?php $this->Form->label( $this->_( 'OpenProvider.tab_domain_contacts.field.' . $key, true), $contact_type . '_' . $key ); ?>
             <?php
                 if ($key == 'country') {
-                    $this->Form->fieldSelect( $contact_type . '_' . $key, Configure::get('OpenProvider.dict.countries'), $this->Html->ifSet( $value ),  [ 'id' => $contact_type . '_' . $key, 'class' => 'form-control input-block-level', 'placeholder' => $this->_( 'OpenProvider.tab_domain_contacts.field.' . $key, true ) ] );
+                    $this->Form->fieldSelect( $contact_type . '_' . $key, Configure::get('OpenProvider.dict.countries'), ($value ?? null),  [ 'id' => $contact_type . '_' . $key, 'placeholder' => $this->_( 'OpenProvider.tab_domain_contacts.field.' . $key, true ) ] );
                 } else {
-                    $this->Form->fieldText( $contact_type . '_' . $key, $this->Html->ifSet( $value ),  [ 'id' => $contact_type . '_' . $key, 'class' => 'form-control input-block-level w-100', 'placeholder' => $this->_( 'OpenProvider.tab_domain_contacts.field.' . $key, true ) ] );
+                    $this->Form->fieldText( $contact_type . '_' . $key, ($value ?? null),  [ 'id' => $contact_type . '_' . $key, 'class' => 'form-control', 'placeholder' => $this->_( 'OpenProvider.tab_domain_contacts.field.' . $key, true ) ] );
                 }
                 ?>
         </li>
@@ -28,7 +28,7 @@ foreach ($vars->domain_contacts as $contact_type => $domain_contact) {
 }
 ?>
 
-<button class="btn btn-light float-right" type="submit">
+<button class="btn btn-primary pull-right" type="submit">
 <i class="fas fa-edit"></i> <?php $this->_('OpenProvider.tab_domain_contacts.field_submit'); ?>
 </button>
 
