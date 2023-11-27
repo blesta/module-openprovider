@@ -16,5 +16,6 @@
             "type": "vcs",
             "url": "https://github.com/openprovider/rest-client-php"
         }
-    ]
+    ],
+    "minimum-stability": "dev"
 }
