@@ -6,7 +6,7 @@
     "require": {
         "php": ">=7.2",
         "blesta/composer-installer": "~1.0",
-        "openprovider/rest-client-php": "dev-v1beta",
+        "openprovider/rest-client-php": "dev-v1beta@dev",
         "phpdocumentor/reflection-docblock": "^5.2",
         "symfony/serializer": "^5.2",
         "symfony/property-access": "^5.2"
@@ -16,6 +16,5 @@
             "type": "vcs",
             "url": "https://github.com/openprovider/rest-client-php"
         }
-    ],
-    "minimum-stability": "dev"
+    ]
 }
