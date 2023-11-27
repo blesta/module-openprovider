@@ -1,6 +1,6 @@
 {
-    "name": "openprovider/openprovider-domains-blesta",
-    "description": "Blesta module by OpenProvider",
+    "name": "blesta/openprovider",
+    "description": "Blesta module for OpenProvider",
     "type": "blesta-module",
     "license": "proprietary",
     "require": {
