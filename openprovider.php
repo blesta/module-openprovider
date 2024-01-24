@@ -1115,6 +1115,24 @@ class Openprovider extends RegistrarModule
     }
 
     /**
+     * Gets the domain registration date
+     *
+     * @param stdClass $service The service belonging to the domain to lookup
+     * @param string $format The format to return the registration date in
+     * @return string The domain registration date in UTC time in the given format
+     * @see Services::get()
+     */
+    public function getRegistrationDate($service, $format = 'Y-m-d H:i:s')
+    {
+        $domain = $this->getOpDomain($service);
+        if (!$domain) {
+            return false;
+        }
+
+        return date($format, strtotime($domain['order_date']));
+    }
+    
+    /**
      * The getExpirationDate() method is called by the Domain Manager plugin to synchronize the expiration date of the domain with the renewal date of the service.
      *
      * @param $service
