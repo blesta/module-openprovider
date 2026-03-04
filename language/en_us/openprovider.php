@@ -2,6 +2,9 @@
 
 // Module config - main
 $lang['OpenProvider.config.name']        = 'Openprovider';
+
+$lang['Openprovider.back_to_manage'] = 'Back';
+
 $lang['OpenProvider.config.description'] = 'Openprovider module for Blesta.';
 
 // Module config - module section
