@@ -5,9 +5,7 @@
 <?php
 foreach ($vars->domain_contacts as $contact_type => $domain_contact) {
 ?>
-<div class="title_row<?php echo $contact_type === array_key_first($vars->domain_contacts) ? ' first' : '';?>">
-    <h6 class="form-section-header"><?php $this->_('OpenProvider.tab_domain_contacts.contact_type.' . $contact_type);?></h6>
-</div>
+<h6 class="form-section-header<?php echo $contact_type === array_key_first($vars->domain_contacts) ? ' first' : '';?>"><?php $this->_('OpenProvider.tab_domain_contacts.contact_type.' . $contact_type);?></h6>
 <div>
     <?php
 
