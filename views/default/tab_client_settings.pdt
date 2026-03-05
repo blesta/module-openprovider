@@ -5,22 +5,37 @@
 
             <?php if (isset($vars->epp) && $vars->epp) { ?>
                 <div class="form-group">
-                    <?php $this->Form->label( $this->_( 'OpenProvider.tab_settings.field.epp', true ), 'epp' ); ?>
+                    <?php $this->Form->label($this->_('OpenProvider.tab_settings.field.epp', true), 'epp'); ?>
                     <div class="input-group">
-                        <?php $this->Form->fieldText( 'epp', ($vars->epp ?? null),  [ 'id' => 'epp', 'class' => 'form-control epp-input', 'placeholder' => $this->_( 'OpenProvider.tab_settings.field.epp', true ), 'disabled' => 'true', 'type' => 'password' ] ); ?>
+                        <?php $this->Form->fieldText('epp', $vars->epp ?? null, [
+                            'id' => 'epp',
+                            'class' => 'form-control epp-input',
+                            'placeholder' => $this->_('OpenProvider.tab_settings.field.epp', true),
+                            'disabled' => 'true',
+                            'type' => 'password',
+                        ]); ?>
                         <div class="input-group-append">
                             <span class="input-group-text show-hide-epp btn"><i class="fa fa-eye"></i></span>
                             <span class="input-group-text generate-new-epp btn" data-toggle="tooltip" data-html="true" title="reset your auth code"><i class="fa fa-repeat"></i></span>
-                            <?php $this->Form->fieldHidden( 'generate-new-epp', '',  [ 'id' => 'generate-new-epp' ] ); ?>
+                            <?php $this->Form->fieldHidden('generate-new-epp', '', ['id' => 'generate-new-epp']); ?>
                         </div>
                     </div>
                 </div>
             <?php } ?>
 
             <div class="custom-control custom-switch">
-                <?php $this->Form->fieldCheckbox( 'is_locked', 'true', isset($vars->is_locked) ? $vars->is_locked == 'true' : false,  [ 'id' => 'is_locked', 'class' => 'custom-control-input is_locked-switch' ] ); ?>
-                <?php $this->Form->label( $this->_('OpenProvider.tab_settings.field.is_locked' . '_' . $vars->is_locked, true), 'is_locked', [ 'class' => 'custom-control-label' ] ); ?>
-                <?php $this->Form->fieldHidden( 'lock', '',  [ 'id' => 'lock' ] ); ?>
+                <?php $this->Form->fieldCheckbox(
+                    'is_locked',
+                    'true',
+                    isset($vars->is_locked) ? $vars->is_locked == 'true' : false,
+                    ['id' => 'is_locked', 'class' => 'custom-control-input is_locked-switch'],
+                ); ?>
+                <?php $this->Form->label(
+                    $this->_('OpenProvider.tab_settings.field.is_locked' . '_' . $vars->is_locked, true),
+                    'is_locked',
+                    ['class' => 'custom-control-label'],
+                ); ?>
+                <?php $this->Form->fieldHidden('lock', '', ['id' => 'lock']); ?>
             </div>
 
         <?php $this->Form->end(); ?>

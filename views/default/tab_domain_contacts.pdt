@@ -2,33 +2,40 @@
 
 <?php $this->Form->create(); ?>
 
-<?php
-foreach ($vars->domain_contacts as $contact_type => $domain_contact) {
-?>
-<h6 class="form-section-header<?php echo $contact_type === array_key_first($vars->domain_contacts) ? ' first' : '';?>"><?php $this->_('OpenProvider.tab_domain_contacts.contact_type.' . $contact_type);?></h6>
+<?php foreach ($vars->domain_contacts as $contact_type => $domain_contact) { ?>
+<h6 class="form-section-header<?php echo $contact_type === array_key_first($vars->domain_contacts)
+    ? ' first'
+    : ''; ?>"><?php $this->_('OpenProvider.tab_domain_contacts.contact_type.' . $contact_type); ?></h6>
 <div>
-    <?php
-
-        foreach ($domain_contact as $key => $value) {
-            ?>
+    <?php foreach ($domain_contact as $key => $value) { ?>
     <div class="mb-3">
-        <?php $this->Form->label( $this->_( 'OpenProvider.tab_domain_contacts.field.' . $key, true), $contact_type . '_' . $key, ['class' => 'form-label'] ); ?>
-    <?php
-
-                if ($key == 'country') {
-                    $this->Form->fieldSelect( $contact_type . '_' . $key, Configure::get('OpenProvider.dict.countries'), ($value ?? null),  [ 'id' => $contact_type . '_' . $key, 'class' => 'form-select', 'placeholder' => $this->_( 'OpenProvider.tab_domain_contacts.field.' . $key, true ) ] );
-                } else {
-                    $this->Form->fieldText( $contact_type . '_' . $key, ($value ?? null),  [ 'id' => $contact_type . '_' . $key, 'class' => 'form-control', 'placeholder' => $this->_( 'OpenProvider.tab_domain_contacts.field.' . $key, true ) ] );
-                }
-                ?>
+        <?php $this->Form->label(
+            $this->_('OpenProvider.tab_domain_contacts.field.' . $key, true),
+            $contact_type . '_' . $key,
+            ['class' => 'form-label'],
+        ); ?>
+    <?php if ($key == 'country') {
+        $this->Form->fieldSelect(
+            $contact_type . '_' . $key,
+            Configure::get('OpenProvider.dict.countries'),
+            $value ?? null,
+            [
+                'id' => $contact_type . '_' . $key,
+                'class' => 'form-select',
+                'placeholder' => $this->_('OpenProvider.tab_domain_contacts.field.' . $key, true),
+            ],
+        );
+    } else {
+        $this->Form->fieldText($contact_type . '_' . $key, $value ?? null, [
+            'id' => $contact_type . '_' . $key,
+            'class' => 'form-control',
+            'placeholder' => $this->_('OpenProvider.tab_domain_contacts.field.' . $key, true),
+        ]);
+    } ?>
     </div>
-    <?php
-        }
-        ?>
+    <?php } ?>
 </div>
-<?php
-}
-?>
+<?php } ?>
 
 <div class="d-flex justify-content-end">
     <button class="btn btn-primary" type="submit">
