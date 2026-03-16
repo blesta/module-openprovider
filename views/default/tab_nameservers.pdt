@@ -1,6 +1,8 @@
 <?php /** @var View $this **/ ?>
 
-<?php $this->Form->create(); ?>
+<?php
+$this->Form->create();
+?>
 
 <div>
     <?php for ($i = 0; $i < 5; $i++) { ?>

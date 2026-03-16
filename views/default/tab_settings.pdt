@@ -1,7 +1,9 @@
 <?php /** @var View $this **/ ?>
 
 <div>
-    <?php $this->Form->create(); ?>
+    <?php
+$this->Form->create();
+?>
 
     <?php if (isset($vars->epp) && $vars->epp) { ?>
     <div class="mb-3">

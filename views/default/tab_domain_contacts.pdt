@@ -1,6 +1,8 @@
 <?php /** @var View $this **/ ?>
 
-<?php $this->Form->create(); ?>
+<?php
+$this->Form->create();
+?>
 
 <?php foreach ($vars->domain_contacts as $contact_type => $domain_contact) { ?>
 <h6 class="form-section-header<?php echo $contact_type === array_key_first($vars->domain_contacts)
