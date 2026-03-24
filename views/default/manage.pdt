@@ -8,13 +8,12 @@ $link_buttons[] = [
 
 $this->Widget->clear();
 $this->Widget->setLinkButtons($link_buttons);
+$this->Widget->setBodyWrapper(false);
 $this->Widget->create(
     $this->_('AdminCompanyModules.manage.boxtitle_manage', true, $this->Html->safe($module->name ?? null)),
     ['id' => 'manage_openprovider'],
 );
 ?>
-
-<h6 class="form-section-header"><?php $this->_('OpenProvider.manage.module_rows_title'); ?></h6>
 
     <?php
     $num_rows = count($module->rows ?? []);
@@ -75,11 +74,3 @@ $this->Widget->create(
     ?>
 
                 <?php $this->Widget->end(); ?>
-
-<script type="text/javascript">
-    document.addEventListener('DOMContentLoaded', function() {
-        if (typeof blestaModalConfirm === 'function') {
-            blestaModalConfirm('.modal-confirm-delete');
-        }
-    });
-</script>
