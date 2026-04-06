@@ -2,7 +2,7 @@
 
 <div>
     <?php
-$this->Form->create();
+$this->Form->create(null, ['id' => 'tab-settings-form']);
 ?>
 
     <?php if (isset($vars->epp) && $vars->epp) { ?>
@@ -47,43 +47,41 @@ $this->Form->create();
 <script>
     var generateNewAuthCodeButtonClickCount = 0;
 
-    document.addEventListener('DOMContentLoaded', function() {
-        var tooltip_el = document.querySelector('.generate-new-epp[data-bs-toggle="tooltip"]');
-        if (tooltip_el) new bootstrap.Tooltip(tooltip_el);
+    var tooltip_el = document.querySelector('.generate-new-epp[data-bs-toggle="tooltip"]');
+    if (tooltip_el) new bootstrap.Tooltip(tooltip_el);
 
-        document.querySelector('.show-hide-epp').addEventListener('click', function() {
-            let icon = this.querySelector('i');
-            if (icon.classList.contains('bi-eye')) {
-                icon.classList.remove('bi-eye');
-                icon.classList.add('bi-eye-slash');
-                document.querySelector('.epp-input').type = 'text';
-            } else {
-                icon.classList.remove('bi-eye-slash');
-                icon.classList.add('bi-eye');
-                document.querySelector('.epp-input').type = 'password';
-            }
-        });
+    document.querySelector('.show-hide-epp').addEventListener('click', function() {
+        let icon = this.querySelector('i');
+        if (icon.classList.contains('bi-eye')) {
+            icon.classList.remove('bi-eye');
+            icon.classList.add('bi-eye-slash');
+            document.querySelector('.epp-input').type = 'text';
+        } else {
+            icon.classList.remove('bi-eye-slash');
+            icon.classList.add('bi-eye');
+            document.querySelector('.epp-input').type = 'password';
+        }
+    });
 
-        document.querySelector('.generate-new-epp').addEventListener('click', function() {
-            document.querySelector('input[name="generate-new-epp"]').value = 'true';
+    document.querySelector('.generate-new-epp').addEventListener('click', function() {
+        document.querySelector('input[name="generate-new-epp"]').value = 'true';
 
-            let icon = this.querySelector('i');
-            icon.innerHTML = '  click again to reset your auth code';
-            icon.parentElement.classList.add('btn-success');
+        let icon = this.querySelector('i');
+        icon.innerHTML = '  click again to reset your auth code';
+        icon.parentElement.classList.add('btn-success');
 
-            if (tooltip_el) {
-                var tooltip = bootstrap.Tooltip.getInstance(tooltip_el);
-                if (tooltip) tooltip.disable();
-            }
+        if (tooltip_el) {
+            var tooltip = bootstrap.Tooltip.getInstance(tooltip_el);
+            if (tooltip) tooltip.disable();
+        }
 
-            if (++generateNewAuthCodeButtonClickCount == 2) {
-                document.querySelector('form').submit();
-            }
-        });
+        if (++generateNewAuthCodeButtonClickCount == 2) {
+            document.getElementById('tab-settings-form').submit();
+        }
+    });
 
-        document.querySelector('.is_locked-switch').addEventListener('click', function() {
-            document.querySelector('input[name="lock"]').value = this.checked ? 'true' : 'false';
-            document.querySelector('form').submit();
-        });
+    document.querySelector('.is_locked-switch').addEventListener('click', function() {
+        document.querySelector('input[name="lock"]').value = this.checked ? 'true' : 'false';
+        document.getElementById('tab-settings-form').submit();
     });
 </script>

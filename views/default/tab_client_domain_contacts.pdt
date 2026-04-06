@@ -3,7 +3,6 @@
 <div class="row panel-fix">
 
     <?php foreach ($vars->domain_contacts as $contact_type => $domain_contact) { ?>
-
         <div class="col-md-6">
             <h2> <?php $this->_('OpenProvider.tab_domain_contacts.contact_type.' . $contact_type); ?> </h2>
 

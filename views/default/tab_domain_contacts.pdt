@@ -16,24 +16,24 @@ $this->Form->create();
             $contact_type . '_' . $key,
             ['class' => 'form-label'],
         ); ?>
-    <?php if ($key == 'country') {
-        $this->Form->fieldSelect(
-            $contact_type . '_' . $key,
-            Configure::get('OpenProvider.dict.countries'),
-            $value ?? null,
-            [
+        <?php if ($key == 'country') {
+            $this->Form->fieldSelect(
+                $contact_type . '_' . $key,
+                Configure::get('OpenProvider.dict.countries'),
+                $value ?? null,
+                [
                 'id' => $contact_type . '_' . $key,
                 'class' => 'form-select',
                 'placeholder' => $this->_('OpenProvider.tab_domain_contacts.field.' . $key, true),
-            ],
-        );
-    } else {
-        $this->Form->fieldText($contact_type . '_' . $key, $value ?? null, [
+                ],
+            );
+        } else {
+            $this->Form->fieldText($contact_type . '_' . $key, $value ?? null, [
             'id' => $contact_type . '_' . $key,
             'class' => 'form-control',
             'placeholder' => $this->_('OpenProvider.tab_domain_contacts.field.' . $key, true),
-        ]);
-    } ?>
+            ]);
+        } ?>
     </div>
     <?php } ?>
 </div>

@@ -53,7 +53,7 @@ $this->Form->create(null, ['class' => 'disable-on-submit']);
 
 <?php $this->Widget->footer(); ?>
 <div class="d-flex justify-content-end">
-    <a class="btn btn-primary submit" href="#"><?php $this->_('OpenProvider.edit_row.add_btn'); ?></a>
+    <button type="submit" class="btn btn-primary"><?php $this->_('OpenProvider.edit_row.add_btn'); ?></button>
 </div>
 
 <?php
