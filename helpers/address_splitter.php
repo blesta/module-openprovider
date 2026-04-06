@@ -5,7 +5,7 @@
  */
 class AddressSplitter
 {
-    private static $generalNumberPrefixes = array(
+    private static $generalNumberPrefixes = [
         // English
         'No [.:]?',
         'Nos ([.:]|\s)',
@@ -19,13 +19,13 @@ class AddressSplitter
         '№ [.:]?',
         'Nº [.:]?',
         'n° [.:]?'
-    );
+    ];
 
-    private static $additionalHouseNumberPrefixes = array(
+    private static $additionalHouseNumberPrefixes = [
         // German
         'Hausnummer \s',
         'Hausnr [.:]?'
-    );
+    ];
 
     private static function getHouseNumberPrefixes()
     {
@@ -290,27 +290,27 @@ class AddressSplitter
         }
 
         if (!empty($matches['A_Street_name'])) {
-            return array(
+            return [
                 'additionToAddress1' => $matches['A_Addition_to_address_1'],
                 'streetName'         => $matches['A_Street_name'],
                 'houseNumber'        => $matches['A_House_number_match'],
-                'houseNumberParts'   => array(
+                'houseNumberParts'   => [
                     'base'      => $matches['A_House_number_base'],
                     'extension' => isset($matches['A_House_number_extension']) ? trim($matches['A_House_number_extension']) : ''
-                ),
+                ],
                 'additionToAddress2' => (isset($matches['A_Addition_to_address_2'])) ? $matches['A_Addition_to_address_2'] : ''
-            );
+            ];
         } else {
-            return array(
+            return [
                 'additionToAddress1' => $matches['B_Addition_to_address_1'],
                 'streetName'         => $matches['B_Street_name'],
                 'houseNumber'        => $matches['B_House_number_match'],
-                'houseNumberParts'   => array(
+                'houseNumberParts'   => [
                     'base'      => $matches['B_House_number_base'],
                     'extension' => isset($matches['B_House_number_extension']) ? trim($matches['B_House_number_extension']) : ''
-                ),
-                'additionToAddress2' => isset($matches['B_Addition_to_address_2']) ? $matches['B_Addition_to_address_2'] : ''
-            );
+                ],
+                'additionToAddress2' => $matches['B_Addition_to_address_2'] ?? ''
+            ];
         }
     }
 
@@ -344,10 +344,10 @@ class AddressSplitter
             throw new \RuntimeException(sprintf('Error occurred while trying to house number \'%s\'', $houseNumber));
         }
 
-        return array(
+        return [
             'base'      => $matches['House_number_base'],
             'extension' => $matches['House_number_extension']
-        );
+        ];
     }
 }
 
@@ -363,11 +363,11 @@ class SplittingException extends \InvalidArgumentException
     /**
      * @var array Predefined error message
      */
-    private static $errorMessages = array(
+    private static $errorMessages = [
         self::CODE_ADDRESS_SPLITTING_ERROR => 'Address \'%s\' could not be splitted into street name and house number.',
         self::CODE_HOUSE_NUMBER_SPLITTING_ERROR => 'House number \'%s\' could not be splitted into base and extension.',
         self::CODE_UNKNOWN_ERROR => 'Unknown error'
-    );
+    ];
 
     /**
      * Create new SplittingException, automatically adds a meaningful error message when the error code is known.

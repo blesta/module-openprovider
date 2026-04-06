@@ -2,17 +2,24 @@
 
 <div class="row panel-fix">
     <div class="col-md-12">
-        <?php
-                for ($i = 0; $i < 5; $i++) {
-                ?>
+        <?php for ($i = 0; $i < 5; $i++) { ?>
         <div class="form-group">
-            <?php $this->Form->label( $this->_( 'OpenProvider.tab_nameserver.field_ns', true, $i+1 ), 'ns' . ($i+1) ); ?>
-            <?php $this->Form->fieldText( 'ns[]', ($vars->ns[$i] ?? null),  [ 'id' => 'ns' . ($i+1), 'class' => 'form-control', 'placeholder' => $this->_( 'OpenProvider.tab_nameserver.field_ns', true, $i+1 ) ] ); ?>
+            <?php $this->Form->label(
+                $this->_('OpenProvider.tab_nameserver.field_ns', true, $i + 1),
+                'ns' . ($i + 1),
+            ); ?>
+            <?php $this->Form->fieldText('ns[]', $vars->ns[$i] ?? null, [
+                'id' => 'ns' . ($i + 1),
+                'class' => 'form-control',
+                'placeholder' => $this->_('OpenProvider.tab_nameserver.field_ns', true, $i + 1),
+            ]); ?>
         </div>
-        <?php
-        }
-        ?>
-        <?php $this->Form->fieldText( 'op_domain_id', ($vars->op_domain_id ?? null),  [ 'id' => 'op_domain_id', 'class' => 'form-control', 'hidden' => 'true' ] ); ?>
+        <?php } ?>
+        <?php $this->Form->fieldText('op_domain_id', $vars->op_domain_id ?? null, [
+            'id' => 'op_domain_id',
+            'class' => 'form-control',
+            'hidden' => 'true',
+        ]); ?>
     </div>
 </div>
 <button class="btn btn-light float-right" type="submit">
@@ -21,12 +28,11 @@
 
 <?php $this->Form->end(); ?>
 
-<?php
-    if (isset($vars->error) && $vars->error) {
-        echo "
+<?php if (isset($vars->error) && $vars->error) {
+    echo "
             <script>
                 $('.alert.alert-success').toggleClass('alert-success alert-danger').text(`{$vars->error}`);
             </script>
         ";
-    }
+}
 ?>

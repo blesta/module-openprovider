@@ -1,5 +1,5 @@
 {
-    "version": "1.1.1",
+    "version": "2.0.0",
     "name": "OpenProvider.config.name",
     "type": "registrar",
     "description": "OpenProvider.config.description",
@@ -32,6 +32,9 @@
     "email_tags": {
         "module": [],
         "package": [],
-        "service": ["domain"]
-    }
+        "service": [
+            "domain"
+        ]
+    },
+    "icon": "bi-globe"
 }

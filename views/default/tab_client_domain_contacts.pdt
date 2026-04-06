@@ -3,22 +3,33 @@
 <div class="row panel-fix">
 
     <?php foreach ($vars->domain_contacts as $contact_type => $domain_contact) { ?>
-
         <div class="col-md-6">
             <h2> <?php $this->_('OpenProvider.tab_domain_contacts.contact_type.' . $contact_type); ?> </h2>
 
             <?php foreach ($domain_contact as $key => $value) { ?>
                 <div class="form-group">
-                    <?php $this->Form->label( $this->_( 'OpenProvider.tab_domain_contacts.field.' . $key, true), $contact_type . '_' . $key ); ?>
-                    <?php
-
-                        if ($key == 'country') {
-                            $this->Form->fieldSelect( $contact_type . '_' . $key, Configure::get('OpenProvider.dict.countries'), ($value ?? null),  [ 'id' => $contact_type . '_' . $key, 'class' => 'form-control', 'placeholder' => $this->_( 'OpenProvider.tab_domain_contacts.field.' . $key, true ) ] );
-                        } else {
-                            $this->Form->fieldText( $contact_type . '_' . $key, ($value ?? null),  [ 'id' => $contact_type . '_' . $key, 'class' => 'form-control', 'placeholder' => $this->_( 'OpenProvider.tab_domain_contacts.field.' . $key, true ) ] );
-                        }
-
-                    ?>
+                    <?php $this->Form->label(
+                        $this->_('OpenProvider.tab_domain_contacts.field.' . $key, true),
+                        $contact_type . '_' . $key,
+                    ); ?>
+                    <?php if ($key == 'country') {
+                        $this->Form->fieldSelect(
+                            $contact_type . '_' . $key,
+                            Configure::get('OpenProvider.dict.countries'),
+                            $value ?? null,
+                            [
+                                'id' => $contact_type . '_' . $key,
+                                'class' => 'form-control',
+                                'placeholder' => $this->_('OpenProvider.tab_domain_contacts.field.' . $key, true),
+                            ],
+                        );
+                    } else {
+                        $this->Form->fieldText($contact_type . '_' . $key, $value ?? null, [
+                            'id' => $contact_type . '_' . $key,
+                            'class' => 'form-control',
+                            'placeholder' => $this->_('OpenProvider.tab_domain_contacts.field.' . $key, true),
+                        ]);
+                    } ?>
                 </div>
             <?php } ?>
 
@@ -32,12 +43,11 @@
 
 <?php $this->Form->end(); ?>
 
-<?php
-    if (isset($vars->error) && $vars->error) {
-        echo "
+<?php if (isset($vars->error) && $vars->error) {
+    echo "
             <script>
                 $('.alert.alert-success').toggleClass('alert-success alert-danger').text(`{$vars->error}`);
             </script>
         ";
-    }
+}
 ?>
