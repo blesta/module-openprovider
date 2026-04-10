@@ -2072,7 +2072,7 @@ class Openprovider extends RegistrarModule
                 try {
                     Cache::writeCache(
                         'tlds_prices',
-                        base64_encode(safe_serialize($result)),
+                        base64_encode(serialize($result)),
                         strtotime(Configure::get('Blesta.cache_length')) - time(),
                         Configure::get('Blesta.company_id') . DS . 'modules' . DS . 'openprovider' . DS
                     );
