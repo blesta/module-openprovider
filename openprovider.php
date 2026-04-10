@@ -2070,7 +2070,7 @@ class Openprovider extends RegistrarModule
         );
 
         if ($cache) {
-            $result = unserialize(base64_decode($cache));
+            $result = safe_unserialize(base64_decode($cache));
         }
 
         Loader::loadModels($this, ['Currencies']);
