@@ -1,6 +1,5 @@
 <?php
 
-use Blesta\Core\Util\Common\Classes\Model;
 use Openprovider\Api\Rest\Client\Domain\Model\DomainAdditionalData;
 use Openprovider\Api\Rest\Client\Person\Model\CustomerExtensionAdditionalData;
 
@@ -2071,7 +2070,7 @@ class Openprovider extends RegistrarModule
         );
 
         if ($cache) {
-            $result = Model::safeUnserialize(base64_decode($cache));
+            $result = safe_unserialize(base64_decode($cache));
         }
 
         Loader::loadModels($this, ['Currencies']);
