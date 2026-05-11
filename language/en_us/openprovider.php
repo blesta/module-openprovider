@@ -38,9 +38,12 @@ $lang['OpenProvider.edit_row.add_btn']     = 'Update Account';
 // Row meta
 $lang['OpenProvider.row_meta.username']        = 'Username';
 $lang['OpenProvider.row_meta.password']        = 'Password';
-$lang['OpenProvider.row_meta.test_mode']       = 'Test mode';
-$lang['OpenProvider.row_meta.test_mode_true']  = 'Yes';
-$lang['OpenProvider.row_meta.test_mode_false'] = 'No';
+$lang['OpenProvider.row_meta.test_mode']                     = 'Test mode';
+$lang['OpenProvider.row_meta.test_mode_true']                = 'Yes';
+$lang['OpenProvider.row_meta.test_mode_false']               = 'No';
+$lang['OpenProvider.row_meta.pricing_source']                = 'Pricing Source';
+$lang['OpenProvider.row_meta.pricing_source_create_price']   = 'Standard Price (create_price)';
+$lang['OpenProvider.row_meta.pricing_source_reseller_price'] = 'Reseller/Subscription Price (reseller_price)';
 
 // Package fields
 $lang['OpenProvider.package_fields.type']        = 'Type';

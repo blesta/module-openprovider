@@ -48,6 +48,16 @@ $this->Widget->create($this->_('OpenProvider.add_row.box_title', true));
     </div>
 </div>
 
+<div class="mb-3">
+    <label for="pricing_source" class="form-label">
+        <?php $this->_('OpenProvider.row_meta.pricing_source'); ?>
+    </label>
+    <?php $this->Form->fieldSelect('pricing_source', [
+        'create_price'   => $this->_('OpenProvider.row_meta.pricing_source_create_price', true),
+        'reseller_price' => $this->_('OpenProvider.row_meta.pricing_source_reseller_price', true),
+    ], $vars->pricing_source ?? 'create_price', ['id' => 'pricing_source', 'class' => 'form-select']); ?>
+</div>
+
 <?php $this->Form->fieldHidden('openprovider_module', true); ?>
 
 <?php $this->Widget->footer(); ?>
