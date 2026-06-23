@@ -36,5 +36,8 @@
             "domain"
         ]
     },
-    "icon": "bi-globe"
+    "logo": {
+        "light": "views/default/images/logo.png",
+        "dark": "views/default/images/logo-dark.png"
+    }
 }
