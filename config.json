@@ -1,5 +1,5 @@
 {
-    "version": "3.0.0",
+    "version": "3.0.1",
     "name": "OpenProvider.config.name",
     "type": "registrar",
     "description": "OpenProvider.config.description",
@@ -36,5 +36,8 @@
             "domain"
         ]
     },
-    "icon": "bi-globe"
+    "logo": {
+        "light": "views/default/images/logo.png",
+        "dark": "views/default/images/logo-dark.png"
+    }
 }
