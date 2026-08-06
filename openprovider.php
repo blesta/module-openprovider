@@ -191,7 +191,7 @@ class Openprovider extends RegistrarModule
      */
     public function addModuleRow(array &$vars): array
     {
-        $allowed_fields   = ['username', 'password', 'test_mode', 'openprovider_module'];
+        $allowed_fields   = ['username', 'password', 'test_mode', 'openprovider_module', 'pricing_source'];
         $encrypted_fields = ['password'];
 
         // Set unspecified checkboxes
@@ -273,7 +273,7 @@ class Openprovider extends RegistrarModule
      */
     public function editModuleRow($module_row, array &$vars)
     {
-        $allowed_fields   = ['username', 'password', 'test_mode', 'openprovider_module'];
+        $allowed_fields   = ['username', 'password', 'test_mode', 'openprovider_module', 'pricing_source'];
         $encrypted_fields = ['password'];
 
         // Set unspecified checkboxes
@@ -2076,8 +2076,9 @@ class Openprovider extends RegistrarModule
 
         Loader::loadModels($this, ['Currencies']);
 
+        $row = $this->getRow();
+
         if (!isset($result)) {
-            $row = $this->getRow();
             $api = $this->getApi($row->meta->username, $row->meta->password, $row->meta->test_mode == 'true');
 
             $extension_response = $api->call('searchExtensionRequest', ['with_price' => true]);
@@ -2134,14 +2135,19 @@ class Openprovider extends RegistrarModule
                     continue;
                 }
 
+                $reg_price_key = (($row->meta->pricing_source ?? 'create_price') === 'reseller_price'
+                    && isset($tld_details['prices']['reseller_price']))
+                    ? 'reseller_price'
+                    : 'create_price';
+
                 $pricing[$tld][$currency->code] = (object) [
                     'registration' => $this->Currencies->convert(
-                        $tld_details['prices']['create_price']['product']['price'],
-                        $tld_details['prices']['create_price']['product']['currency'],
+                        $tld_details['prices'][$reg_price_key]['product']['price'],
+                        $tld_details['prices'][$reg_price_key]['product']['currency'],
                         $currency->code,
                         Configure::get('Blesta.company_id')
                     ),
-                    'transfer' => isset($tld_details['prices']['renew_price'])
+                    'transfer' => isset($tld_details['prices']['transfer_price'])
                         ? $this->Currencies->convert(
                             $tld_details['prices']['transfer_price']['product']['price'],
                             $tld_details['prices']['transfer_price']['product']['currency'],
