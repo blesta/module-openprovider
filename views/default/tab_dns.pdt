@@ -1,0 +1,86 @@
+<?php /** @var View $this **/ ?>
+
+<?php if (!($zone_exists ?? false)) { ?>
+<div class="alert alert-info"><?php $this->_('OpenProvider.tab_dns.no_zone'); ?></div>
+<?php } else { ?>
+
+<h6 class="form-section-header first"><?php $this->_('OpenProvider.tab_dns.title_list'); ?></h6>
+<table class="table">
+    <thead>
+        <tr>
+            <th><span><?php $this->_('OpenProvider.tab_dns.field.name'); ?></span></th>
+            <th><span><?php $this->_('OpenProvider.tab_dns.field.type'); ?></span></th>
+            <th><span><?php $this->_('OpenProvider.tab_dns.field.value'); ?></span></th>
+            <th><span><?php $this->_('OpenProvider.tab_dns.field.prio'); ?></span></th>
+            <th><span><?php $this->_('OpenProvider.tab_dns.field.ttl'); ?></span></th>
+            <th></th>
+        </tr>
+    </thead>
+    <tbody>
+        <?php foreach (($records ?? []) as $record) { ?>
+        <tr>
+            <td><?php echo $this->Html->safe($record['name'] ?? null); ?></td>
+            <td><?php echo $this->Html->safe($record['type'] ?? null); ?></td>
+            <td><?php echo $this->Html->safe($record['value'] ?? null); ?></td>
+            <td><?php echo $this->Html->safe(empty($record['prio']) ? null : $record['prio']); ?></td>
+            <td><?php echo $this->Html->safe($record['ttl'] ?? null); ?></td>
+            <td>
+                <?php
+                $this->Form->create();
+                $this->Form->fieldHidden('name', $record['name'] ?? null);
+                $this->Form->fieldHidden('type', $record['type'] ?? null);
+                $this->Form->fieldHidden('value', $record['value'] ?? null);
+                $this->Form->fieldHidden('prio', $record['prio'] ?? null);
+                $this->Form->fieldHidden('ttl', $record['ttl'] ?? null);
+                $this->Form->fieldButton('action', $this->_('OpenProvider.tab_dns.field.delete', true), [
+                    'class' => 'btn btn-sm btn-outline-danger',
+                    'value' => 'delete',
+                    'type' => 'submit',
+                ]);
+                $this->Form->end();
+                ?>
+            </td>
+        </tr>
+        <?php } ?>
+    </tbody>
+</table>
+
+<h6 class="form-section-header"><?php $this->_('OpenProvider.tab_dns.title_add'); ?></h6>
+<p class="text-muted"><?php $this->_('OpenProvider.tab_dns.help_text'); ?></p>
+<?php $this->Form->create(); ?>
+<table class="table">
+    <thead>
+        <tr>
+            <th><span><?php $this->_('OpenProvider.tab_dns.field.name'); ?></span></th>
+            <th><span><?php $this->_('OpenProvider.tab_dns.field.type'); ?></span></th>
+            <th><span><?php $this->_('OpenProvider.tab_dns.field.value'); ?></span></th>
+            <th><span><?php $this->_('OpenProvider.tab_dns.field.prio'); ?></span></th>
+            <th><span><?php $this->_('OpenProvider.tab_dns.field.ttl'); ?></span></th>
+            <th></th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td><?php $this->Form->fieldText('name', $vars->name ?? null, [
+                'class' => 'form-control',
+                'placeholder' => $domain ?? null,
+            ]); ?></td>
+            <td><?php $this->Form->fieldSelect('type', $record_types ?? [], $vars->type ?? null, [
+                'class' => 'form-select',
+            ]); ?></td>
+            <td><?php $this->Form->fieldText('value', $vars->value ?? null, ['class' => 'form-control']); ?></td>
+            <td><?php $this->Form->fieldText('prio', $vars->prio ?? null, ['class' => 'form-control']); ?></td>
+            <td><?php $this->Form->fieldText('ttl', $vars->ttl ?? 3600, ['class' => 'form-control']); ?></td>
+            <td>
+                <?php $this->Form->fieldButton('action', $this->_('OpenProvider.tab_dns.field.add', true), [
+                    'class' => 'btn btn-primary',
+                    'value' => 'add',
+                    'type' => 'submit',
+                ]); ?>
+            </td>
+        </tr>
+    </tbody>
+</table>
+<?php $this->Form->end(); ?>
+
+<?php } ?>
