@@ -23,6 +23,11 @@ class Openprovider extends RegistrarModule
     private const MINIMUM_TOKEN_LIFE_TIME_IN_SECONDS = 100;
 
     /**
+     * The number of TLDs to fetch per request when retrieving TLD prices
+     */
+    private const EXTENSIONS_PER_REQUEST = 500;
+
+    /**
      * This lifetime is enough to use one token per session.
      * But if not, token will be requested again
      */
@@ -2326,6 +2331,43 @@ class Openprovider extends RegistrarModule
     }
 
     /**
+     * Fetches every TLD with its prices, following the pagination of the API
+     *
+     * @param OpenProviderApi $api
+     *
+     * @return array|null the list of TLDs, or null if a request failed
+     */
+    private function getExtensions(OpenProviderApi $api): ?array
+    {
+        $extensions = [];
+        $offset = 0;
+
+        do {
+            $extension_response = $api->call('searchExtensionRequest', [
+                'with_price' => true,
+                'limit'      => self::EXTENSIONS_PER_REQUEST,
+                'offset'     => $offset,
+            ]);
+            $this->logRequest($api);
+
+            if ($extension_response->getCode() != 0) {
+                $this->assignError($extension_response->getMessage());
+
+                return null;
+            }
+
+            $results = $extension_response->getData()['results'] ?? [];
+            $extensions = array_merge($extensions, $results);
+
+            // Advance by the number of results actually returned, the API may
+            // return fewer TLDs per request than the requested limit
+            $offset += count($results);
+        } while (!empty($results) && $offset < $extension_response->getTotal());
+
+        return $extensions;
+    }
+
+    /**
      * Retrieves all the Openprovider prices
      *
      * @param array $filters A list of criteria by which to filter fetched pricings including but not limited to:
@@ -2352,17 +2394,13 @@ class Openprovider extends RegistrarModule
             $row = $this->getRow();
             $api = $this->getApi($row->meta->username, $row->meta->password, $row->meta->test_mode == 'true');
 
-            $extension_response = $api->call('searchExtensionRequest', ['with_price' => true]);
-            $this->logRequest($api);
-
-            if ($extension_response->getCode() != 0) {
-                $this->assignError($extension_response->getMessage());
-
+            $extension_results = $this->getExtensions($api);
+            if (is_null($extension_results)) {
                 return [];
             }
 
             // Save the TLDs results to the cache
-            $result = $extension_response->getData();
+            $result = ['results' => $extension_results];
             if (Configure::get('Caching.on') && is_writable(CACHEDIR)) {
                 try {
                     Cache::writeCache(
