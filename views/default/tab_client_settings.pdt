@@ -38,6 +38,26 @@
                 <?php $this->Form->fieldHidden('lock', '', ['id' => 'lock']); ?>
             </div>
 
+            <?php if ($id_protection ?? false) { ?>
+            <div class="custom-control custom-switch">
+                <?php $this->Form->fieldCheckbox(
+                    'is_private_whois_enabled',
+                    'true',
+                    isset($vars->is_private_whois_enabled) ? $vars->is_private_whois_enabled == 'true' : false,
+                    ['id' => 'is_private_whois_enabled', 'class' => 'custom-control-input private-whois-switch'],
+                ); ?>
+                <?php $this->Form->label(
+                    $this->_(
+                        'OpenProvider.tab_settings.field.private_whois' . '_' . $vars->is_private_whois_enabled,
+                        true
+                    ),
+                    'is_private_whois_enabled',
+                    ['class' => 'custom-control-label'],
+                ); ?>
+                <?php $this->Form->fieldHidden('private_whois', '', ['id' => 'private_whois']); ?>
+            </div>
+            <?php } ?>
+
         <?php $this->Form->end(); ?>
     </div>
 </div>
@@ -81,6 +101,14 @@
     $('.is_locked-switch').on('click', function () {
         let checked = $(this).is(':checked');
         let input = $('input[name="lock"]')[0]
+        input.value = checked ? 'true' : 'false';
+
+        $('form').submit();
+    });
+
+    $('.private-whois-switch').on('click', function () {
+        let checked = $(this).is(':checked');
+        let input = $('input[name="private_whois"]')[0]
         input.value = checked ? 'true' : 'false';
 
         $('form').submit();
