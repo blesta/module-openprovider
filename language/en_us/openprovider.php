@@ -47,6 +47,8 @@ $lang['OpenProvider.package_fields.type']        = 'Type';
 $lang['OpenProvider.package_fields.type_domain'] = 'Domain Registration';
 $lang['OpenProvider.package_fields.type_ssl']    = 'SSL Certificate';
 $lang['OpenProvider.package_fields.tld_options'] = 'TLDs';
+$lang['OpenProvider.package_fields.epp_code']    = 'EPP Code';
+$lang['OpenProvider.package_fields.enable_epp_code'] = 'Allow the EPP code to be retrieved from the Settings tab.';
 
 // Name servers
 $lang['OpenProvider.nameserver.ns1'] = 'Name Server 1';
@@ -96,6 +98,21 @@ $lang['OpenProvider.tab_settings.field.submit']          = 'Update Settings';
 $lang['OpenProvider.tab_settings.message.epp_code']      = 'Epp code: %s'; // %s is epp code
 $lang['OpenProvider.tab_settings.field.is_locked_true']  = 'Domain transfer lock is enabled. Switch to disable it.';
 $lang['OpenProvider.tab_settings.field.is_locked_false'] = 'Domain transfer lock is disabled. Switch to enable it.';
+$lang['OpenProvider.tab_settings.field.private_whois_true']  = 'ID Protection is enabled. Switch to disable it.';
+$lang['OpenProvider.tab_settings.field.private_whois_false'] = 'ID Protection is disabled. Switch to enable it.';
+
+$lang['OpenProvider.tab_dns.title']        = 'DNS Records';
+$lang['OpenProvider.tab_dns.title_list']   = 'DNS Records';
+$lang['OpenProvider.tab_dns.title_add']    = 'Add DNS Record';
+$lang['OpenProvider.tab_dns.help_text']    = 'Leave the name empty to create a record for the domain itself. Priority only applies to MX and SRV records.';
+$lang['OpenProvider.tab_dns.no_zone']      = 'There is no DNS zone available for this domain. DNS records can only be managed when the domain is using the name servers of OpenProvider.';
+$lang['OpenProvider.tab_dns.field.name']   = 'Name';
+$lang['OpenProvider.tab_dns.field.type']   = 'Type';
+$lang['OpenProvider.tab_dns.field.value']  = 'Value';
+$lang['OpenProvider.tab_dns.field.prio']   = 'Priority';
+$lang['OpenProvider.tab_dns.field.ttl']    = 'TTL';
+$lang['OpenProvider.tab_dns.field.add']    = 'Add Record';
+$lang['OpenProvider.tab_dns.field.delete'] = 'Delete';
 
 // Errors add/update row
 $lang['OpenProvider.!error.username.empty']            = 'Username field shouldn\'t be empty!';

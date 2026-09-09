@@ -104,6 +104,20 @@ Configure::set('OpenProvider.tlds', [
     '.design'
 ]);
 
+// DNS record types
+Configure::set('OpenProvider.dns_record_types', [
+    'A' => 'A',
+    'AAAA' => 'AAAA',
+    'CAA' => 'CAA',
+    'CNAME' => 'CNAME',
+    'MX' => 'MX',
+    'NS' => 'NS',
+    'SPF' => 'SPF',
+    'SRV' => 'SRV',
+    'TLSA' => 'TLSA',
+    'TXT' => 'TXT'
+]);
+
 // Domain fields
 Configure::set('OpenProvider.domain_fields', [
     'domain' => [
