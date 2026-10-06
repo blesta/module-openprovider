@@ -4,12 +4,12 @@
     "type": "blesta-module",
     "license": "proprietary",
     "require": {
-        "php": ">=7.2",
+        "php": ">=8.2",
         "blesta/composer-installer": "~1.0",
         "openprovider/rest-client-php": "v2.0.2-beta@dev",
         "phpdocumentor/reflection-docblock": "^5.2",
-        "symfony/serializer": "^5.2",
-        "symfony/property-access": "^5.2"
+        "symfony/serializer": "^6.4",
+        "symfony/property-access": "^6.4"
     },
     "repositories": [
         {
