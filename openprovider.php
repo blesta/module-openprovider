@@ -729,7 +729,7 @@ class Openprovider extends RegistrarModule
             'domain'         => $splitted_domain_name,
             'period'         => $vars['years'],
             'name_servers'   => $name_servers,
-            'autorenew'      => 'default',
+            'autorenew'      => 'off',
         ];
 
         if (!empty($additional_data['domain_additional_data'])) {
@@ -1093,6 +1093,56 @@ class Openprovider extends RegistrarModule
 
         return;
     }
+
+    /**
+     * Renews the domain on the remote server for the service's term. Sets Input errors on failure,
+     * preventing the service from renewing.
+     */
+    public function renewService($package, $service, $parent_package = null, $parent_service = null)
+    {
+        $op_domain = $this->getOpDomain($service);
+        if (!$op_domain) {
+            return;
+        }
+
+        // Get the date the client has paid through, which may still be a pending service change
+        Loader::loadModels($this, ['ServiceChanges']);
+        $date_renews = $service->date_renews;
+        foreach ($this->ServiceChanges->getAll('pending', $service->id) as $service_change) {
+            if (isset($service_change->data->date_renews)) {
+                $date_renews = $service_change->data->date_renews;
+                break;
+            }
+        }
+
+        $row = $this->getModuleRow($service->module_row_id);
+        $api = $this->getApi($row->meta->username, $row->meta->password, $row->meta->test_mode == 'true');
+
+        // Skip the renewal if the domain is already registered through that date, e.g. auto-renewed by Openprovider,
+        // and turn auto-renew off so the next renewal is handled by the module
+        if (date('Y-m-d', strtotime($op_domain['expiration_date'])) >= date('Y-m-d', strtotime($date_renews))) {
+            if (($op_domain['autorenew'] ?? null) !== 'off') {
+                $api->call('modifyDomainRequest', ['id' => $op_domain['id'], 'autorenew' => 'off']);
+                $this->logRequest($api);
+            }
+
+            return;
+        }
+
+        $renew_domain_response = $api->call(
+            'renewDomainRequest',
+            [
+                'id' => $op_domain['id'],
+                'period' => $service->package_pricing->period == 'year' ? $service->package_pricing->term : 1
+            ]
+        );
+        $this->logRequest($api);
+
+        if ($renew_domain_response->getCode() != 0) {
+            $this->assignError($renew_domain_response->getMessage());
+        }
+    }
+
     private function getOpDomain($service, $view = null)
     {
 
