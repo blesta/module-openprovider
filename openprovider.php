@@ -1106,10 +1106,11 @@ class Openprovider extends RegistrarModule
         }
 
         // Get the date the client has paid through, which may still be a pending service change
+        // from a paid invoice (pending changes for unpaid invoices do not reflect what the client has paid for)
         Loader::loadModels($this, ['ServiceChanges']);
         $date_renews = $service->date_renews;
         foreach ($this->ServiceChanges->getAll('pending', $service->id) as $service_change) {
-            if (isset($service_change->data->date_renews)) {
+            if (isset($service_change->data->date_renews) && !empty($service_change->invoice->date_closed)) {
                 $date_renews = $service_change->data->date_renews;
                 break;
             }
@@ -1121,10 +1122,7 @@ class Openprovider extends RegistrarModule
         // Skip the renewal if the domain is already registered through that date, e.g. auto-renewed by Openprovider,
         // and turn auto-renew off so the next renewal is handled by the module
         if (date('Y-m-d', strtotime($op_domain['expiration_date'])) >= date('Y-m-d', strtotime($date_renews))) {
-            if (($op_domain['autorenew'] ?? null) !== 'off') {
-                $api->call('modifyDomainRequest', ['id' => $op_domain['id'], 'autorenew' => 'off']);
-                $this->logRequest($api);
-            }
+            $this->disableOpAutorenew($api, $op_domain);
 
             return;
         }
@@ -1140,6 +1138,32 @@ class Openprovider extends RegistrarModule
 
         if ($renew_domain_response->getCode() != 0) {
             $this->assignError($renew_domain_response->getMessage());
+
+            return;
+        }
+
+        // Turn auto-renew off so the domain is only renewed when the client pays. Domains registered before
+        // this module handled renewals may still be set to Openprovider's default
+        $this->disableOpAutorenew($api, $op_domain);
+    }
+
+    /**
+     * Turns off Openprovider auto-renew for the given domain, if it is not already off
+     *
+     * @param OpenProviderApi $api The API client to use
+     * @param array $op_domain The Openprovider domain data, as returned by getOpDomain()
+     */
+    private function disableOpAutorenew(OpenProviderApi $api, array $op_domain): void
+    {
+        if (($op_domain['autorenew'] ?? null) === 'off') {
+            return;
+        }
+
+        $response = $api->call('modifyDomainRequest', ['id' => $op_domain['id'], 'autorenew' => 'off']);
+        $this->logRequest($api);
+
+        if ($response->getCode() != 0) {
+            $this->assignError($response->getMessage());
         }
     }
 
