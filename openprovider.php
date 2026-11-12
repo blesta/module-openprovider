@@ -1078,17 +1078,10 @@ class Openprovider extends RegistrarModule
             return false;
         }
 
-        $update_auto_renew_domain_response = $api->call(
-            'modifyDomainRequest',
-            [
-                'id' => $op_domain['id'],
-                'autorenew' => 'off'
-            ]
-        );
-        $this->logRequest($api);
-
-        if ($update_auto_renew_domain_response->getCode() != 0) {
-            $this->assignError($update_auto_renew_domain_response->getMessage());
+        // Turning auto-renew off is the whole cancellation, so a failure here must block it
+        $response = $this->disableOpAutorenew($api, $op_domain);
+        if ($response && $response->getCode() != 0) {
+            $this->assignError($response->getMessage());
         }
 
         return;
@@ -1121,24 +1114,18 @@ class Openprovider extends RegistrarModule
 
         // Skip the renewal if the domain is already registered through that date, e.g. auto-renewed by Openprovider,
         // and turn auto-renew off so the next renewal is handled by the module
-        if (date('Y-m-d', strtotime($op_domain['expiration_date'])) >= date('Y-m-d', strtotime($date_renews))) {
+        $op_expiration = $this->toOpDate($op_domain['expiration_date'] ?? null);
+        $paid_through = date('Y-m-d', strtotime($date_renews));
+        if ($op_expiration !== null && $op_expiration >= $paid_through) {
             $this->disableOpAutorenew($api, $op_domain);
 
             return;
         }
 
-        $renew_domain_response = $api->call(
-            'renewDomainRequest',
-            [
-                'id' => $op_domain['id'],
-                'period' => $service->package_pricing->period == 'year' ? $service->package_pricing->term : 1
-            ]
-        );
-        $this->logRequest($api);
-
-        if ($renew_domain_response->getCode() != 0) {
-            $this->assignError($renew_domain_response->getMessage());
-
+        // Only renew for the years not already covered at Openprovider, so a domain Openprovider has
+        // partially auto-renewed is not renewed past what the client paid for
+        $term = $service->package_pricing->period == 'year' ? (int) $service->package_pricing->term : 1;
+        if (!$this->renewOpDomain($api, $op_domain, $this->getRenewalPeriod($op_expiration, $paid_through, $term))) {
             return;
         }
 
@@ -1148,23 +1135,109 @@ class Openprovider extends RegistrarModule
     }
 
     /**
-     * Turns off Openprovider auto-renew for the given domain, if it is not already off
+     * Renew a domain through the registrar
+     *
+     * @param string $domain The domain to renew
+     * @param int $module_row_id The ID of the module row to fetch for the current module
+     * @param array $vars A list of vars to submit with the renew request
+     *
+     *  - qty The number of years to renew for (default 1)
+     * @return bool True if the domain was successfully renewed, false otherwise
+     */
+    public function renewDomain($domain, $module_row_id = null, array $vars = [])
+    {
+        $row = $this->getModuleRow($module_row_id);
+        $api = $this->getApi($row->meta->username, $row->meta->password, $row->meta->test_mode == 'true');
+
+        $op_domain = $this->findOpDomain($api, $domain);
+        if (!$op_domain) {
+            return false;
+        }
+
+        if (!$this->renewOpDomain($api, $op_domain, max(1, (int) ($vars['qty'] ?? $vars['years'] ?? 1)))) {
+            return false;
+        }
+
+        $this->disableOpAutorenew($api, $op_domain);
+
+        return true;
+    }
+
+    /**
+     * Renews the given Openprovider domain for a number of years. Sets an Input error on failure
      *
      * @param OpenProviderApi $api The API client to use
      * @param array $op_domain The Openprovider domain data, as returned by getOpDomain()
+     * @param int $period The number of years to renew for
+     * @return bool True if the domain was renewed, false otherwise
      */
-    private function disableOpAutorenew(OpenProviderApi $api, array $op_domain): void
+    private function renewOpDomain(OpenProviderApi $api, array $op_domain, int $period): bool
+    {
+        $response = $api->call('renewDomainRequest', ['id' => $op_domain['id'], 'period' => $period]);
+        $this->logRequest($api);
+
+        if ($response->getCode() != 0) {
+            $this->assignError($response->getMessage());
+
+            return false;
+        }
+
+        return true;
+    }
+
+    /**
+     * Gets the number of years to renew a domain for so that it is registered through the paid-through date
+     *
+     * @param string|null $op_expiration The domain's current expiration date at Openprovider (Y-m-d), if known
+     * @param string $paid_through The date the client has paid through (Y-m-d)
+     * @param int $term The pricing term in years, which caps the renewal
+     * @return int The number of years to renew for, between 1 and the term
+     */
+    private function getRenewalPeriod(?string $op_expiration, string $paid_through, int $term): int
+    {
+        $term = max(1, $term);
+        if ($op_expiration === null) {
+            return $term;
+        }
+
+        // Round partial years up so the domain is never left short of the paid-through date
+        $gap = (new DateTime($op_expiration))->diff(new DateTime($paid_through));
+        $years = $gap->invert ? 0 : $gap->y + (($gap->m > 0 || $gap->d > 0) ? 1 : 0);
+
+        return max(1, min($term, $years));
+    }
+
+    /**
+     * Formats an Openprovider date as Y-m-d, or null if it is missing or unparseable
+     *
+     * @param string|null $date The date as returned by Openprovider
+     * @return string|null The date as Y-m-d, or null
+     */
+    private function toOpDate(?string $date): ?string
+    {
+        $timestamp = empty($date) ? false : strtotime($date);
+
+        return $timestamp === false ? null : date('Y-m-d', $timestamp);
+    }
+
+    /**
+     * Turns off Openprovider auto-renew for the given domain, if it is not already off. Does not set
+     * Input errors; the request is logged and callers decide whether a failure matters
+     *
+     * @param OpenProviderApi $api The API client to use
+     * @param array $op_domain The Openprovider domain data, as returned by getOpDomain()
+     * @return Response|null The API response, or null if auto-renew was already off
+     */
+    private function disableOpAutorenew(OpenProviderApi $api, array $op_domain): ?Response
     {
         if (($op_domain['autorenew'] ?? null) === 'off') {
-            return;
+            return null;
         }
 
         $response = $api->call('modifyDomainRequest', ['id' => $op_domain['id'], 'autorenew' => 'off']);
         $this->logRequest($api);
 
-        if ($response->getCode() != 0) {
-            $this->assignError($response->getMessage());
-        }
+        return $response;
     }
 
     private function getOpDomain($service, $view = null)
@@ -1181,6 +1254,19 @@ class Openprovider extends RegistrarModule
         $row = $this->getModuleRow($service->module_row_id);
         $api = $this->getApi($row->meta->username, $row->meta->password, $row->meta->test_mode == 'true');
 
+        return $this->findOpDomain($api, $domain_name, $view);
+    }
+
+    /**
+     * Looks up a domain at Openprovider by name. Sets an Input error if it cannot be found
+     *
+     * @param OpenProviderApi $api The API client to use
+     * @param string $domain_name The domain name to look up
+     * @param string|null $view The current view (admin or client), used to pick the not-found message
+     * @return array|false The Openprovider domain data, or false if not found
+     */
+    private function findOpDomain(OpenProviderApi $api, string $domain_name, $view = null)
+    {
         $domain_response = $api->call('searchDomainRequest', [
             'full_name' => $domain_name
         ]);
