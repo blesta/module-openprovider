@@ -1073,7 +1073,7 @@ class Openprovider extends RegistrarModule
         $row = $this->getModuleRow($service->module_row_id);
         $api = $this->getApi($row->meta->username, $row->meta->password, $row->meta->test_mode == 'true');
 
-        $op_domain = $this->getOpDomain($service);
+        $op_domain = $this->getOpDomain($service, null, $api);
         if (!$op_domain) {
             return false;
         }
@@ -1093,7 +1093,10 @@ class Openprovider extends RegistrarModule
      */
     public function renewService($package, $service, $parent_package = null, $parent_service = null)
     {
-        $op_domain = $this->getOpDomain($service);
+        $row = $this->getModuleRow($service->module_row_id);
+        $api = $this->getApi($row->meta->username, $row->meta->password, $row->meta->test_mode == 'true');
+
+        $op_domain = $this->getOpDomain($service, null, $api);
         if (!$op_domain) {
             return;
         }
@@ -1108,9 +1111,6 @@ class Openprovider extends RegistrarModule
                 break;
             }
         }
-
-        $row = $this->getModuleRow($service->module_row_id);
-        $api = $this->getApi($row->meta->username, $row->meta->password, $row->meta->test_mode == 'true');
 
         // Skip the renewal if the domain is already registered through that date, e.g. auto-renewed by Openprovider,
         // and turn auto-renew off so the next renewal is handled by the module
@@ -1200,9 +1200,11 @@ class Openprovider extends RegistrarModule
             return $term;
         }
 
-        // Round partial years up so the domain is never left short of the paid-through date
+        // Round the gap to the nearest whole year. Registrar renewals are whole years, so anything short of a
+        // half year is drift between Blesta's renew date and Openprovider's expiration (e.g. 11/29 vs 12/1
+        // from an admin edit or the renewal-days-before-expiration offset), not a year the client paid for
         $gap = (new DateTime($op_expiration))->diff(new DateTime($paid_through));
-        $years = $gap->invert ? 0 : $gap->y + (($gap->m > 0 || $gap->d > 0) ? 1 : 0);
+        $years = $gap->invert ? 0 : (int) round($gap->days / 365.25);
 
         return max(1, min($term, $years));
     }
@@ -1222,7 +1224,8 @@ class Openprovider extends RegistrarModule
 
     /**
      * Turns off Openprovider auto-renew for the given domain, if it is not already off. Does not set
-     * Input errors; the request is logged and callers decide whether a failure matters
+     * Input errors; a failure is written to the module and application logs and callers decide whether
+     * it should block the current action
      *
      * @param OpenProviderApi $api The API client to use
      * @param array $op_domain The Openprovider domain data, as returned by getOpDomain()
@@ -1237,12 +1240,35 @@ class Openprovider extends RegistrarModule
         $response = $api->call('modifyDomainRequest', ['id' => $op_domain['id'], 'autorenew' => 'off']);
         $this->logRequest($api);
 
+        if ($response->getCode() != 0) {
+            // Left on, Openprovider will renew the domain itself next cycle and the module will skip its own
+            // renewal, so make the failure visible even when it does not block the caller
+            $domain_name = trim(
+                ($op_domain['domain']['name'] ?? '') . '.' . ($op_domain['domain']['extension'] ?? ''),
+                '.'
+            );
+            $this->getFromContainer('logger')->error(sprintf(
+                'Openprovider: failed to turn off auto-renew for domain %s (ID %s): %s',
+                $domain_name !== '' ? $domain_name : 'unknown',
+                $op_domain['id'] ?? 'unknown',
+                $response->getMessage()
+            ));
+        }
+
         return $response;
     }
 
-    private function getOpDomain($service, $view = null)
+    /**
+     * Looks up the Openprovider domain for the given service. Sets an Input error if the service has no
+     * domain name or the domain cannot be found
+     *
+     * @param stdClass $service The service whose domain to look up
+     * @param string|null $view The current view (admin or client), used to pick the not-found message
+     * @param OpenProviderApi|null $api An API client to reuse; one is built from the service's module row if omitted
+     * @return array|false The Openprovider domain data, or false if not found
+     */
+    private function getOpDomain($service, $view = null, ?OpenProviderApi $api = null)
     {
-
         $domain_name = $this->getServiceDomain($service);
 
         if (empty($domain_name)) {
@@ -1251,8 +1277,10 @@ class Openprovider extends RegistrarModule
             return false;
         }
 
-        $row = $this->getModuleRow($service->module_row_id);
-        $api = $this->getApi($row->meta->username, $row->meta->password, $row->meta->test_mode == 'true');
+        if ($api === null) {
+            $row = $this->getModuleRow($service->module_row_id);
+            $api = $this->getApi($row->meta->username, $row->meta->password, $row->meta->test_mode == 'true');
+        }
 
         return $this->findOpDomain($api, $domain_name, $view);
     }
