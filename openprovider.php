@@ -1123,8 +1123,9 @@ class Openprovider extends RegistrarModule
         }
 
         // Only renew for the years not already covered at Openprovider, so a domain Openprovider has
-        // partially auto-renewed is not renewed past what the client paid for
-        $term = $service->package_pricing->period == 'year' ? (int) $service->package_pricing->term : 1;
+        // partially auto-renewed is not renewed past what the client paid for, and a multi-cycle renewal
+        // is registered through everything the client paid for
+        $term =$service->package_pricing->period == 'year' ? (int) $service->package_pricing->term : 1;
         if (!$this->renewOpDomain($api, $op_domain, $this->getRenewalPeriod($op_expiration, $paid_through, $term))) {
             return;
         }
@@ -1190,23 +1191,24 @@ class Openprovider extends RegistrarModule
      *
      * @param string|null $op_expiration The domain's current expiration date at Openprovider (Y-m-d), if known
      * @param string $paid_through The date the client has paid through (Y-m-d)
-     * @param int $term The pricing term in years, which caps the renewal
-     * @return int The number of years to renew for, between 1 and the term
+     * @param int $term The pricing term in years, used when the Openprovider expiration is unknown
+     * @return int The number of years to renew for, at least 1
      */
     private function getRenewalPeriod(?string $op_expiration, string $paid_through, int $term): int
     {
-        $term = max(1, $term);
         if ($op_expiration === null) {
-            return $term;
+            return max(1, $term);
         }
 
         // Round the gap to the nearest whole year. Registrar renewals are whole years, so anything short of a
         // half year is drift between Blesta's renew date and Openprovider's expiration (e.g. 11/29 vs 12/1
-        // from an admin edit or the renewal-days-before-expiration offset), not a year the client paid for
+        // from an admin edit or the renewal-days-before-expiration offset), not a year the client paid for.
+        // The gap is not capped at the term: a renewal invoice for several cycles moves the paid-through date
+        // out by that many terms, and the domain must be registered through all of them
         $gap = (new DateTime($op_expiration))->diff(new DateTime($paid_through));
         $years = $gap->invert ? 0 : (int) round($gap->days / 365.25);
 
-        return max(1, min($term, $years));
+        return max(1, $years);
     }
 
     /**
