@@ -31,11 +31,18 @@ class ZoneDnsParamsCreator extends ParamsCreator
             $args['domain']['extension'] = parent::idnEncode($args['domain']['extension']);
         }
 
+        // Record names are relative to the zone; the empty name is the zone itself
         foreach (['add', 'remove', 'replace'] as $operation) {
             foreach ($args['records'][$operation] ?? [] as $index => $record) {
-                if (isset($record['name'])) {
+                if (!empty($record['name'])) {
                     $args['records'][$operation][$index]['name'] = parent::idnEncode($record['name']);
                 }
+            }
+        }
+
+        foreach ($args['records'] ?? [] as $index => $record) {
+            if (is_array($record) && !empty($record['name'])) {
+                $args['records'][$index]['name'] = parent::idnEncode($record['name']);
             }
         }
 

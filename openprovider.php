@@ -1851,14 +1851,23 @@ class Openprovider extends RegistrarModule
      */
     private function getDnsRecordFromPost(array $post, string $domain_name): array
     {
-        $name = strtolower(trim($post['name'] ?? ''));
+        $name = strtolower(rtrim(trim($post['name'] ?? ''), '.'));
         $domain_name = strtolower($domain_name);
 
-        // OpenProvider expects the fully qualified record name
-        if ($name == '' || $name == '@') {
-            $name = $domain_name;
-        } elseif ($name != $domain_name && substr($name, -strlen('.' . $domain_name)) != '.' . $domain_name) {
-            $name = $name . '.' . $domain_name;
+        // OpenProvider expects record names relative to the zone ("www", or "" for the
+        // domain itself) but returns them fully qualified, so strip the domain when present.
+        // Records come back in punycode, so an IDN domain has to be matched in both forms.
+        $suffixes = array_unique([$domain_name, IdnEncoder::encode($domain_name)]);
+
+        if ($name == '@' || in_array($name, $suffixes)) {
+            $name = '';
+        } else {
+            foreach ($suffixes as $suffix) {
+                if (substr($name, -strlen('.' . $suffix)) == '.' . $suffix) {
+                    $name = substr($name, 0, -strlen('.' . $suffix));
+                    break;
+                }
+            }
         }
 
         // Fall back to the default TTL when the field is left blank
