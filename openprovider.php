@@ -1688,23 +1688,50 @@ class Openprovider extends RegistrarModule
         $row = $this->getModuleRow($service->module_row_id ?? $package->module_row);
         $api = $this->getApi($row->meta->username, $row->meta->password, $row->meta->test_mode == 'true');
 
+        // Records only take effect when the domain delegates to Openprovider's name servers
+        $op_domain = $this->getOpDomain($service, $view);
+        if (!$op_domain) {
+            return false;
+        }
+
+        $nameservers = array_map(function ($name_server) {
+            return trim($name_server['name'] ?? '');
+        }, $op_domain['name_servers'] ?? []);
+
+        $not_found_codes = Configure::get('OpenProvider.dns_zone_not_found_codes') ?? [];
+
         if ($post && isset($post['action'])) {
             $operation = $post['action'] == 'delete' ? 'remove' : 'add';
+            $record = $this->getDnsRecordFromPost($post, $domain_name);
+            $error_key = $operation == 'remove' ? 'record_delete_failed' : 'record_add_failed';
 
-            $modify_zone_response = $api->call('modifyZoneDnsRequest', [
+            $response = $api->call('modifyZoneDnsRequest', [
                 'name'    => $domain_name,
                 'records' => [
-                    $operation => [$this->getDnsRecordFromPost($post, $domain_name)],
+                    $operation => [$record],
                 ],
             ]);
             $this->logRequest($api);
 
+            // Openprovider requires at least one record to create a zone, so the first
+            // record added to a domain without a zone creates the zone
+            if (
+                $operation == 'add'
+                && $this->isFailedResponse($response)
+                && in_array($response->getCode(), $not_found_codes)
+            ) {
+                $response = $api->call('createZoneDnsRequest', [
+                    'domain'  => $this->splitDomainName($domain_name),
+                    'type'    => 'master',
+                    'records' => [$record],
+                ]);
+                $this->logRequest($api);
+                $error_key = 'zone_create_failed';
+            }
+
             // The raw registrar error is kept in the module log; users get a generic message
-            if ($this->isFailedResponse($modify_zone_response)) {
-                $this->assignError($this->getDnsErrorMessage(
-                    $operation == 'remove' ? 'record_delete_failed' : 'record_add_failed',
-                    $view
-                ));
+            if ($this->isFailedResponse($response)) {
+                $this->assignError($this->getDnsErrorMessage($error_key, $view));
 
                 $vars = (object) $post;
             }
@@ -1724,7 +1751,6 @@ class Openprovider extends RegistrarModule
         if ($this->isFailedResponse($zone_response)) {
             // Only a "zone not found" reply means the domain has no zone; any other
             // failure (bad credentials, outage, timeout) must not be reported as a missing zone
-            $not_found_codes = Configure::get('OpenProvider.dns_zone_not_found_codes') ?? [];
             if (!in_array($zone_response->getCode(), $not_found_codes)) {
                 $zone_error = true;
                 $this->assignError($this->getDnsErrorMessage('zone_retrieve_failed', $view));
@@ -1739,6 +1765,8 @@ class Openprovider extends RegistrarModule
         $this->view->set('zone_error', $zone_error);
         $this->view->set('records', $records);
         $this->view->set('record_types', Configure::get('OpenProvider.dns_record_types'));
+        $this->view->set('nameservers', $nameservers);
+        $this->view->set('uses_op_nameservers', $this->usesOpenproviderNameservers($nameservers));
 
         return $this->render($vars);
     }
@@ -1756,6 +1784,40 @@ class Openprovider extends RegistrarModule
     private function isFailedResponse(Response $response): bool
     {
         return $response->getCode() != 0 || $response->getMessage() != '';
+    }
+
+    /**
+     * Checks whether every given name server belongs to Openprovider
+     *
+     * @param array $nameservers the domain's current name server host names
+     *
+     * @return bool true if the domain delegates to Openprovider's name servers only
+     */
+    private function usesOpenproviderNameservers(array $nameservers): bool
+    {
+        $suffixes = Configure::get('OpenProvider.dns_nameserver_suffixes') ?? [];
+
+        if (empty($nameservers)) {
+            return false;
+        }
+
+        foreach ($nameservers as $nameserver) {
+            $nameserver = strtolower(rtrim(trim($nameserver), '.'));
+            $is_openprovider = false;
+
+            foreach ($suffixes as $suffix) {
+                if (substr($nameserver, -strlen('.' . $suffix)) == '.' . $suffix) {
+                    $is_openprovider = true;
+                    break;
+                }
+            }
+
+            if (!$is_openprovider) {
+                return false;
+            }
+        }
+
+        return true;
     }
 
     /**

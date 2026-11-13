@@ -1,11 +1,18 @@
-<?php if (!($zone_exists ?? false)) { ?>
-    <?php if (empty($zone_error)) { ?>
+<?php if (empty($zone_error)) { ?>
+    <?php if (!($zone_exists ?? false)) { ?>
 <div class="alert alert-info"><?php $this->_('OpenProvider.tab_dns.no_zone'); ?></div>
     <?php } ?>
-<?php } else { ?>
+    <?php if (empty($uses_op_nameservers)) { ?>
+<div class="alert alert-warning"><?php $this->_(
+    'OpenProvider.tab_dns.nameserver_warning',
+    false,
+    $this->Html->safe(empty($nameservers) ? $this->_('OpenProvider.tab_dns.nameserver_none', true) : implode(', ', $nameservers))
+); ?></div>
+    <?php } ?>
 
 <div class="row panel-fix">
     <div class="col-md-12">
+        <?php if (!empty($zone_exists)) { ?>
         <h4><?php $this->_('OpenProvider.tab_dns.title_list'); ?></h4>
 
         <div class="table-responsive my-2">
@@ -49,8 +56,9 @@
                 </tbody>
             </table>
         </div>
+        <?php } ?>
 
-        <h4 class="mt-3"><?php $this->_('OpenProvider.tab_dns.title_add'); ?></h4>
+        <h4<?php echo !empty($zone_exists) ? ' class="mt-3"' : ''; ?>><?php $this->_('OpenProvider.tab_dns.title_add'); ?></h4>
         <p><?php $this->_('OpenProvider.tab_dns.help_text'); ?></p>
 
         <?php $this->Form->create(); ?>
