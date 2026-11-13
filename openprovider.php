@@ -908,7 +908,7 @@ class Openprovider extends RegistrarModule
             true
         );
 
-        $is_success = $last_response->getCode() == 0;
+        $is_success = !$this->isFailedResponse($last_response);
         $this->log(
             $last_request->getCommand(),
             $is_success
@@ -1377,9 +1377,9 @@ class Openprovider extends RegistrarModule
     public function tabDns(
         $package,
         $service,
-        array $get = null,
-        array $post = null,
-        array $files = null
+        ?array $get = null,
+        ?array $post = null,
+        ?array $files = null
     ) {
         return $this->manageDns('tab_dns', $package, $service, $get, $post, $files);
     }
@@ -1396,9 +1396,9 @@ class Openprovider extends RegistrarModule
     public function tabClientDns(
         $package,
         $service,
-        array $get = null,
-        array $post = null,
-        array $files = null
+        ?array $get = null,
+        ?array $post = null,
+        ?array $files = null
     ) {
         return $this->manageDns('tab_client_dns', $package, $service, $get, $post, $files);
     }
@@ -1658,9 +1658,9 @@ class Openprovider extends RegistrarModule
         $view,
         $package,
         $service,
-        array $get = null,
-        array $post = null,
-        array $files = null
+        ?array $get = null,
+        ?array $post = null,
+        ?array $files = null
     ) {
         if (!$this->checkIfServiceStatusIssetAndActive($service)) {
             $this->assignError(
@@ -1699,8 +1699,12 @@ class Openprovider extends RegistrarModule
             ]);
             $this->logRequest($api);
 
-            if ($modify_zone_response->getCode() != 0) {
-                $this->assignError($modify_zone_response->getMessage());
+            // The raw registrar error is kept in the module log; users get a generic message
+            if ($this->isFailedResponse($modify_zone_response)) {
+                $this->assignError($this->getDnsErrorMessage(
+                    $operation == 'remove' ? 'record_delete_failed' : 'record_add_failed',
+                    $view
+                ));
 
                 $vars = (object) $post;
             }
@@ -1713,14 +1717,66 @@ class Openprovider extends RegistrarModule
         ]);
         $this->logRequest($api);
 
-        $zone_exists = $zone_response->getCode() == 0;
+        $zone_exists = false;
+        $zone_error = false;
+        $records = [];
+
+        if ($this->isFailedResponse($zone_response)) {
+            // Only a "zone not found" reply means the domain has no zone; any other
+            // failure (bad credentials, outage, timeout) must not be reported as a missing zone
+            $not_found_codes = Configure::get('OpenProvider.dns_zone_not_found_codes') ?? [];
+            if (!in_array($zone_response->getCode(), $not_found_codes)) {
+                $zone_error = true;
+                $this->assignError($this->getDnsErrorMessage('zone_retrieve_failed', $view));
+            }
+        } else {
+            $zone_exists = true;
+            $records = $zone_response->getData()['records'] ?? [];
+        }
 
         $this->view->set('domain', $domain_name);
         $this->view->set('zone_exists', $zone_exists);
-        $this->view->set('records', $zone_exists ? ($zone_response->getData()['records'] ?? []) : []);
+        $this->view->set('zone_error', $zone_error);
+        $this->view->set('records', $records);
         $this->view->set('record_types', Configure::get('OpenProvider.dns_record_types'));
 
         return $this->render($vars);
+    }
+
+    /**
+     * Checks whether an API response represents a failure
+     *
+     * Transport failures (timeouts, TLS errors) are returned with code 0 and only
+     * the exception message set, so the code alone cannot be trusted
+     *
+     * @param Response $response the API response
+     *
+     * @return bool true if the request failed
+     */
+    private function isFailedResponse(Response $response): bool
+    {
+        return $response->getCode() != 0 || $response->getMessage() != '';
+    }
+
+    /**
+     * Builds the user-facing message for a failed DNS operation
+     *
+     * Staff are additionally pointed at the module log, which holds the raw registrar error
+     *
+     * @param string $key the language key suffix under OpenProvider.!error.dns
+     * @param string $view the view being rendered ('tab_dns' for staff, 'tab_client_dns' for clients)
+     *
+     * @return string the message
+     */
+    private function getDnsErrorMessage(string $key, string $view): string
+    {
+        $message = Language::_('OpenProvider.!error.dns.' . $key, true);
+
+        if ($view == 'tab_dns') {
+            $message .= ' ' . Language::_('OpenProvider.!error.dns.see_module_log', true);
+        }
+
+        return $message;
     }
 
     /**
@@ -1733,7 +1789,8 @@ class Openprovider extends RegistrarModule
      */
     private function getDnsRecordFromPost(array $post, string $domain_name): array
     {
-        $name = trim($post['name'] ?? '');
+        $name = strtolower(trim($post['name'] ?? ''));
+        $domain_name = strtolower($domain_name);
 
         // OpenProvider expects the fully qualified record name
         if ($name == '' || $name == '@') {
@@ -1742,15 +1799,20 @@ class Openprovider extends RegistrarModule
             $name = $name . '.' . $domain_name;
         }
 
+        // Fall back to the default TTL when the field is left blank
+        $ttl = trim($post['ttl'] ?? '');
+
         $record = [
             'name'  => $name,
             'type'  => $post['type'] ?? '',
             'value' => trim($post['value'] ?? ''),
-            'ttl'   => (int) ($post['ttl'] ?? 3600),
+            'ttl'   => $ttl === '' ? 3600 : (int) $ttl,
         ];
 
-        if (!empty($post['prio'])) {
-            $record['prio'] = (int) $post['prio'];
+        // A priority of 0 is valid for MX/SRV records, so only skip it when blank
+        $prio = trim($post['prio'] ?? '');
+        if ($prio !== '') {
+            $record['prio'] = (int) $prio;
         }
 
         return $record;

@@ -104,6 +104,9 @@ Configure::set('OpenProvider.tlds', [
     '.design'
 ]);
 
+// OpenProvider error codes meaning the domain has no DNS zone (800 "Unknown DNS zone", 872 "Zone specified is not found")
+Configure::set('OpenProvider.dns_zone_not_found_codes', [800, 872]);
+
 // DNS record types
 Configure::set('OpenProvider.dns_record_types', [
     'A' => 'A',

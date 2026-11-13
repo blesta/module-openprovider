@@ -1,7 +1,9 @@
 <?php /** @var View $this **/ ?>
 
 <?php if (!($zone_exists ?? false)) { ?>
+    <?php if (empty($zone_error)) { ?>
 <div class="alert alert-info"><?php $this->_('OpenProvider.tab_dns.no_zone'); ?></div>
+    <?php } ?>
 <?php } else { ?>
 
 <h6 class="form-section-header first"><?php $this->_('OpenProvider.tab_dns.title_list'); ?></h6>
@@ -22,7 +24,7 @@
             <td><?php echo $this->Html->safe($record['name'] ?? null); ?></td>
             <td><?php echo $this->Html->safe($record['type'] ?? null); ?></td>
             <td><?php echo $this->Html->safe($record['value'] ?? null); ?></td>
-            <td><?php echo $this->Html->safe(empty($record['prio']) ? null : $record['prio']); ?></td>
+            <td><?php echo $this->Html->safe($record['prio'] ?? null); ?></td>
             <td><?php echo $this->Html->safe($record['ttl'] ?? null); ?></td>
             <td>
                 <?php

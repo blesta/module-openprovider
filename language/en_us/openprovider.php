@@ -127,4 +127,9 @@ $lang['OpenProvider.!error.domain.not_exist']          = 'This domain does not e
 $lang['OpenProvider.!error.domain.contact_support']    = 'Please contact support for domain details.';
 $lang['OpenProvider.!error.domain.name_undefined']     = 'Domain name undefined.';
 
+$lang['OpenProvider.!error.dns.zone_retrieve_failed'] = 'The DNS records for this domain could not be retrieved from the registrar. Please try again later.';
+$lang['OpenProvider.!error.dns.record_add_failed']    = 'The DNS record could not be added. Please check the record values and try again.';
+$lang['OpenProvider.!error.dns.record_delete_failed'] = 'The DNS record could not be deleted. Please try again later.';
+$lang['OpenProvider.!error.dns.see_module_log']       = 'The error returned by the registrar is in the module log.';
+
 $lang['OpenProvider.!error.service.domain.status_not_active_in_blesta'] = 'That section is not accessible while the service is not in an Active state.';
