@@ -5,6 +5,7 @@ require_once __DIR__ . DS . 'search_domains_params_creator.php';
 require_once __DIR__ . DS . 'modify_domain_params_creator.php';
 require_once __DIR__ . DS . 'check_domains_params_creator.php';
 require_once __DIR__ . DS . 'retrieve_price_domain_params_creator.php';
+require_once __DIR__ . DS . 'zone_dns_params_creator.php';
 
 class ParamsCreatorFactory
 {
@@ -24,6 +25,11 @@ class ParamsCreatorFactory
                 return new CheckDomainsParamsCreator();
             case 'retrievePriceDomainRequest':
                 return new RetrievePriceDomainParamsCreator();
+            case 'retrieveZoneDnsRequest':
+            case 'modifyZoneDnsRequest':
+            case 'createZoneDnsRequest':
+            case 'deleteZoneDnsRequest':
+                return new ZoneDnsParamsCreator();
         }
 
         return new ParamsCreator();

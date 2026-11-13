@@ -47,6 +47,8 @@ $lang['OpenProvider.package_fields.type']        = 'Type';
 $lang['OpenProvider.package_fields.type_domain'] = 'Domain Registration';
 $lang['OpenProvider.package_fields.type_ssl']    = 'SSL Certificate';
 $lang['OpenProvider.package_fields.tld_options'] = 'TLDs';
+$lang['OpenProvider.package_fields.epp_code']    = 'EPP Code';
+$lang['OpenProvider.package_fields.enable_epp_code'] = 'Allow the EPP code to be retrieved from the Settings tab.';
 
 // Name servers
 $lang['OpenProvider.nameserver.ns1'] = 'Name Server 1';
@@ -96,6 +98,23 @@ $lang['OpenProvider.tab_settings.field.submit']          = 'Update Settings';
 $lang['OpenProvider.tab_settings.message.epp_code']      = 'Epp code: %s'; // %s is epp code
 $lang['OpenProvider.tab_settings.field.is_locked_true']  = 'Domain transfer lock is enabled. Switch to disable it.';
 $lang['OpenProvider.tab_settings.field.is_locked_false'] = 'Domain transfer lock is disabled. Switch to enable it.';
+$lang['OpenProvider.tab_settings.field.private_whois_true']  = 'ID Protection is enabled. Switch to disable it.';
+$lang['OpenProvider.tab_settings.field.private_whois_false'] = 'ID Protection is disabled. Switch to enable it.';
+
+$lang['OpenProvider.tab_dns.title']        = 'DNS Records';
+$lang['OpenProvider.tab_dns.title_list']   = 'DNS Records';
+$lang['OpenProvider.tab_dns.title_add']    = 'Add DNS Record';
+$lang['OpenProvider.tab_dns.help_text']    = 'Leave the name empty to create a record for the domain itself. Priority only applies to MX and SRV records.';
+$lang['OpenProvider.tab_dns.no_zone']      = 'There is no DNS zone for this domain yet. Adding the first record will create one on OpenProvider\'s name servers.';
+$lang['OpenProvider.tab_dns.nameserver_warning'] = 'This domain is not using OpenProvider\'s name servers (currently: %1$s). DNS records managed here will not take effect until the name servers are changed on the Nameservers tab.';
+$lang['OpenProvider.tab_dns.nameserver_none']    = 'none';
+$lang['OpenProvider.tab_dns.field.name']   = 'Name';
+$lang['OpenProvider.tab_dns.field.type']   = 'Type';
+$lang['OpenProvider.tab_dns.field.value']  = 'Value';
+$lang['OpenProvider.tab_dns.field.prio']   = 'Priority';
+$lang['OpenProvider.tab_dns.field.ttl']    = 'TTL';
+$lang['OpenProvider.tab_dns.field.add']    = 'Add Record';
+$lang['OpenProvider.tab_dns.field.delete'] = 'Delete';
 
 // Errors add/update row
 $lang['OpenProvider.!error.username.empty']            = 'Username field shouldn\'t be empty!';
@@ -109,5 +128,11 @@ $lang['OpenProvider.!error.passport_series.empty']     = 'This tld require an pa
 $lang['OpenProvider.!error.domain.not_exist']          = 'This domain does not exist in Openprovider.';
 $lang['OpenProvider.!error.domain.contact_support']    = 'Please contact support for domain details.';
 $lang['OpenProvider.!error.domain.name_undefined']     = 'Domain name undefined.';
+
+$lang['OpenProvider.!error.dns.zone_retrieve_failed'] = 'The DNS records for this domain could not be retrieved from the registrar. Please try again later.';
+$lang['OpenProvider.!error.dns.record_add_failed']    = 'The DNS record could not be added. Please check the record values and try again.';
+$lang['OpenProvider.!error.dns.record_delete_failed'] = 'The DNS record could not be deleted. Please try again later.';
+$lang['OpenProvider.!error.dns.zone_create_failed']   = 'The DNS zone could not be created. Please check the record values and try again.';
+$lang['OpenProvider.!error.dns.see_module_log']       = 'The error returned by the registrar is in the module log.';
 
 $lang['OpenProvider.!error.service.domain.status_not_active_in_blesta'] = 'That section is not accessible while the service is not in an Active state.';

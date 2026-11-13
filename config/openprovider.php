@@ -104,6 +104,26 @@ Configure::set('OpenProvider.tlds', [
     '.design'
 ]);
 
+// OpenProvider error codes meaning the domain has no DNS zone (800 "Unknown DNS zone", 872 "Zone specified is not found")
+Configure::set('OpenProvider.dns_zone_not_found_codes', [800, 872]);
+
+// Domains of Openprovider's own name servers (ns1.openprovider.nl, ns2.openprovider.be, ns3.openprovider.eu)
+Configure::set('OpenProvider.dns_nameserver_suffixes', ['openprovider.nl', 'openprovider.be', 'openprovider.eu']);
+
+// DNS record types
+Configure::set('OpenProvider.dns_record_types', [
+    'A' => 'A',
+    'AAAA' => 'AAAA',
+    'CAA' => 'CAA',
+    'CNAME' => 'CNAME',
+    'MX' => 'MX',
+    'NS' => 'NS',
+    'SPF' => 'SPF',
+    'SRV' => 'SRV',
+    'TLSA' => 'TLSA',
+    'TXT' => 'TXT'
+]);
+
 // Domain fields
 Configure::set('OpenProvider.domain_fields', [
     'domain' => [

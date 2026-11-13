@@ -23,6 +23,11 @@ class Openprovider extends RegistrarModule
     private const MINIMUM_TOKEN_LIFE_TIME_IN_SECONDS = 100;
 
     /**
+     * The number of TLDs to fetch per request when retrieving TLD prices
+     */
+    private const EXTENSIONS_PER_REQUEST = 500;
+
+    /**
      * This lifetime is enough to use one token per session.
      * But if not, token will be requested again
      */
@@ -91,7 +96,7 @@ class Openprovider extends RegistrarModule
     public function manageModule($module, array &$vars): string
     {
         // Load the view into this object, so helpers can be automatically added to the view
-        $this->view           = new View('manage', 'default');
+        $this->view = new View('manage', 'default');
         $this->view->base_uri = $this->base_uri;
         $this->view->setDefaultView($this->default_module_view_path);
 
@@ -116,7 +121,7 @@ class Openprovider extends RegistrarModule
     public function manageAddRow(array &$vars): string
     {
         // Load the view into this object, so helpers can be automatically added to the view
-        $this->view           = new View('add_row', 'default');
+        $this->view = new View('add_row', 'default');
         $this->view->base_uri = $this->base_uri;
         $this->view->setDefaultView($this->default_module_view_path);
 
@@ -151,7 +156,7 @@ class Openprovider extends RegistrarModule
     public function manageEditRow($module_row, array &$vars): string
     {
         // Load the view into this object, so helpers can be automatically added to the view
-        $this->view           = new View('edit_row', 'default');
+        $this->view = new View('edit_row', 'default');
         $this->view->base_uri = $this->base_uri;
         $this->view->setDefaultView($this->default_module_view_path);
 
@@ -191,7 +196,7 @@ class Openprovider extends RegistrarModule
      */
     public function addModuleRow(array &$vars): array
     {
-        $allowed_fields   = ['username', 'password', 'test_mode', 'openprovider_module'];
+        $allowed_fields = ['username', 'password', 'test_mode', 'openprovider_module'];
         $encrypted_fields = ['password'];
 
         // Set unspecified checkboxes
@@ -210,8 +215,8 @@ class Openprovider extends RegistrarModule
             foreach ($vars as $key => $value) {
                 if (in_array($key, $allowed_fields)) {
                     $meta[] = [
-                        'key'       => $key,
-                        'value'     => $value,
+                        'key' => $key,
+                        'value' => $value,
                         'encrypted' => in_array($key, $encrypted_fields) ? 1 : 0
                     ];
                 }
@@ -233,21 +238,21 @@ class Openprovider extends RegistrarModule
         return [
             'username' => [
                 'valid' => [
-                    'rule'    => 'isEmpty',
-                    'negate'  => true,
+                    'rule' => 'isEmpty',
+                    'negate' => true,
                     'message' => Language::_('OpenProvider.!error.username.empty', true)
                 ]
             ],
             'password' => [
                 'valid' => [
-                    'rule'    => 'isEmpty',
-                    'negate'  => true,
+                    'rule' => 'isEmpty',
+                    'negate' => true,
                     'message' => Language::_('OpenProvider.!error.password.empty', true)
                 ],
                 'valid_connection' => [
-                    'last'    => true,
+                    'last' => true,
                     'message' => Language::_('OpenProvider.!error.password.valid_connection', true),
-                    'rule'    => [
+                    'rule' => [
                         [$this, 'validateConnection'],
                         $vars['username'],
                         $vars['test_mode'] ?? 'false'
@@ -273,7 +278,7 @@ class Openprovider extends RegistrarModule
      */
     public function editModuleRow($module_row, array &$vars)
     {
-        $allowed_fields   = ['username', 'password', 'test_mode', 'openprovider_module'];
+        $allowed_fields = ['username', 'password', 'test_mode', 'openprovider_module'];
         $encrypted_fields = ['password'];
 
         // Set unspecified checkboxes
@@ -295,8 +300,8 @@ class Openprovider extends RegistrarModule
             foreach ($module_row as $key => $value) {
                 if (in_array($key, $allowed_fields)) {
                     $meta[] = [
-                        'key'       => $key,
-                        'value'     => $value,
+                        'key' => $key,
+                        'value' => $value,
                         'encrypted' => in_array($key, $encrypted_fields) ? 1 : 0
                     ];
                 }
@@ -404,6 +409,22 @@ class Openprovider extends RegistrarModule
             )
         );
         $fields->setField($type);
+
+        // Set whether to allow the EPP code to be retrieved
+        $epp_code = $fields->label(Language::_('OpenProvider.package_fields.epp_code', true));
+        $epp_code->attach(
+            $fields->fieldCheckbox(
+                'meta[epp_code]',
+                '1',
+                ($vars->meta['epp_code'] ?? '0') == '1',
+                ['id' => 'openprovider_epp_code'],
+                $fields->label(
+                    Language::_('OpenProvider.package_fields.enable_epp_code', true),
+                    'openprovider_epp_code'
+                )
+            )
+        );
+        $fields->setField($epp_code);
 
         // Set nameservers
         for ($i = 1; $i <= 5; $i++) {
@@ -736,6 +757,11 @@ class Openprovider extends RegistrarModule
             $domain['additional_data'] = $additional_data['domain_additional_data'];
         }
 
+        // Enable whois privacy via config option
+        if (isset($vars['configoptions']['id_protection'])) {
+            $domain['is_private_whois_enabled'] = true;
+        }
+
         $api_command = 'createDomainRequest';
         if (isset($vars['auth']) && !empty($vars['auth'])) {
             $domain['auth_code'] = $vars['auth'];
@@ -882,7 +908,7 @@ class Openprovider extends RegistrarModule
             true
         );
 
-        $is_success = $last_response->getCode() == 0;
+        $is_success = !$this->isFailedResponse($last_response);
         $this->log(
             $last_request->getCommand(),
             $is_success
@@ -1060,7 +1086,26 @@ class Openprovider extends RegistrarModule
         $parent_package = null,
         $parent_service = null
     ): ?array {
-        // TODO: Change the autogenerated stub
+        // Handle whois privacy via config option
+        $use_module = isset($vars['use_module']) && $vars['use_module'] == 'true';
+        $id_protection = $this->featureServiceEnabled('id_protection', $service);
+        $enable_id_protection = isset($vars['configoptions']['id_protection']);
+
+        if ($use_module && $id_protection != $enable_id_protection) {
+            $op_domain = $this->getOpDomain($service);
+
+            if ($op_domain) {
+                $row = $this->getModuleRow($service->module_row_id);
+                $api = $this->getApi($row->meta->username, $row->meta->password, $row->meta->test_mode == 'true');
+
+                $private_whois_response = $this->setPrivateWhois($op_domain['id'], $enable_id_protection, $api);
+
+                if ($private_whois_response->getCode() != 0) {
+                    $this->assignError($private_whois_response->getMessage());
+                }
+            }
+        }
+
         return parent::editService($package, $service, $vars, $parent_package, $parent_service);
     }
 
@@ -1171,19 +1216,30 @@ class Openprovider extends RegistrarModule
      * Returns all tabs to display to a admin when managing a service whose
      * package uses this module
      *
-     * @param stdClass $package A stdClass object representing the selected package
-     * @return array An array of tab
-     * s in the format of method => title.
+     * @param stdClass $service A stdClass object representing the service
+     * @return array An array of tabs in the format of method => title.
      *  Example: array('methodName' => "Title", 'methodName2' => "Title2")
      */
-    public function getAdminTabs($package): array
+    public function getAdminServiceTabs($service): array
     {
+        Loader::loadModels($this, ['Packages']);
+
+        $package = $this->Packages->get($service->package_id ?? $service->package->id);
+
         if ($package->meta->type == 'domain') {
-            return [
+            $tabs = [
                 'tabNameservers' => Language::_('OpenProvider.tab_nameservers.title', true),
                 'tabDomainContacts' => Language::_('OpenProvider.tab_domain_contacts.title', true),
+                'tabDns'            => Language::_('OpenProvider.tab_dns.title', true),
                 'tabSettings'       => Language::_('OpenProvider.tab_settings.title', true),
             ];
+
+            // Check if DNS Management is enabled
+            if (!$this->featureServiceEnabled('dns_management', $service)) {
+                unset($tabs['tabDns']);
+            }
+
+            return $tabs;
         }
 
         return [];
@@ -1193,21 +1249,52 @@ class Openprovider extends RegistrarModule
      * Returns all tabs to display to a client when managing a service whose
      * package uses this module
      *
-     * @param stdClass $package A stdClass object representing the selected package
+     * @param stdClass $service A stdClass object representing the service
      * @return array An array of tabs in the format of method => title.
      *  Example: array('methodName' => "Title", 'methodName2' => "Title2")
      */
-    public function getClientTabs($package): array
+    public function getClientServiceTabs($service): array
     {
+        Loader::loadModels($this, ['Packages']);
+
+        $package = $this->Packages->get($service->package_id ?? $service->package->id);
+
         if ($package->meta->type == 'domain') {
-            return [
+            $tabs = [
                 'tabClientNameservers'    => Language::_('OpenProvider.tab_nameservers.title', true),
                 'tabClientDomainContacts' => Language::_('OpenProvider.tab_domain_contacts.title', true),
+                'tabClientDns'            => Language::_('OpenProvider.tab_dns.title', true),
                 'tabClientSettings'       => Language::_('OpenProvider.tab_settings.title', true),
             ];
+
+            // Check if DNS Management is enabled
+            if (!$this->featureServiceEnabled('dns_management', $service)) {
+                unset($tabs['tabClientDns']);
+            }
+
+            return $tabs;
         }
 
         return [];
+    }
+
+    /**
+     * Checks if a feature is enabled for a given service
+     *
+     * @param string $feature The name of the feature to check if it's enabled (e.g. id_protection)
+     * @param stdClass $service An object representing the service
+     *
+     * @return bool True if the feature is enabled, false otherwise
+     */
+    private function featureServiceEnabled($feature, $service): bool
+    {
+        foreach (($service->options ?? []) as $option) {
+            if ($option->option_name == $feature) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     /**
@@ -1276,6 +1363,44 @@ class Openprovider extends RegistrarModule
         array $files = null
     ) {
         return $this->manageDomainContacts('tab_client_domain_contacts', $package, $service, $get, $post, $files);
+    }
+
+    /**
+     * @param stdClass $package package row from database
+     * @param stdClass $service service row from database
+     * @param array|null $get if not null, method get data for this page NOT USED IN THIS METHOD
+     * @param array|null $post if not null, method update data loaded from form on this page
+     * @param array|null $files NOT USED IN THIS METHOD
+     *
+     * @return string|bool HTML generated by the view or FALSE if something went wrong
+     */
+    public function tabDns(
+        $package,
+        $service,
+        ?array $get = null,
+        ?array $post = null,
+        ?array $files = null
+    ) {
+        return $this->manageDns('tab_dns', $package, $service, $get, $post, $files);
+    }
+
+    /**
+     * @param stdClass $package package row from database
+     * @param stdClass $service service row from database
+     * @param array|null $get if not null, method get data for this page NOT USED IN THIS METHOD
+     * @param array|null $post if not null, method update data loaded from form on this page
+     * @param array|null $files NOT USED IN THIS METHOD
+     *
+     * @return string|bool HTML generated by the view or FALSE if something went wrong
+     */
+    public function tabClientDns(
+        $package,
+        $service,
+        ?array $get = null,
+        ?array $post = null,
+        ?array $files = null
+    ) {
+        return $this->manageDns('tab_client_dns', $package, $service, $get, $post, $files);
     }
 
     /**
@@ -1529,6 +1654,242 @@ class Openprovider extends RegistrarModule
      *
      * @return string|bool HTML generated by the view or FALSE if something went wrong
      */
+    private function manageDns(
+        $view,
+        $package,
+        $service,
+        ?array $get = null,
+        ?array $post = null,
+        ?array $files = null
+    ) {
+        if (!$this->checkIfServiceStatusIssetAndActive($service)) {
+            $this->assignError(
+                Language::_('OpenProvider.!error.service.domain.status_not_active_in_blesta', true)
+            );
+
+            return false;
+        }
+
+        $this->view = new View($view, 'default');
+        $this->view->setDefaultView($this->default_module_view_path);
+
+        // Load the helpers required for this view
+        Loader::loadHelpers($this, ['Form', 'Html']);
+
+        $vars = new stdClass();
+
+        $domain_name = $this->getServiceDomain($service);
+        if (empty($domain_name)) {
+            $this->assignError(Language::_('OpenProvider.!error.domain.name_undefined', true));
+
+            return false;
+        }
+
+        $row = $this->getModuleRow($service->module_row_id ?? $package->module_row);
+        $api = $this->getApi($row->meta->username, $row->meta->password, $row->meta->test_mode == 'true');
+
+        // Records only take effect when the domain delegates to Openprovider's name servers
+        $op_domain = $this->getOpDomain($service, $view);
+        if (!$op_domain) {
+            return false;
+        }
+
+        $nameservers = array_map(function ($name_server) {
+            return trim($name_server['name'] ?? '');
+        }, $op_domain['name_servers'] ?? []);
+
+        $not_found_codes = Configure::get('OpenProvider.dns_zone_not_found_codes') ?? [];
+
+        if ($post && isset($post['action'])) {
+            $operation = $post['action'] == 'delete' ? 'remove' : 'add';
+            $record = $this->getDnsRecordFromPost($post, $domain_name);
+            $error_key = $operation == 'remove' ? 'record_delete_failed' : 'record_add_failed';
+
+            $response = $api->call('modifyZoneDnsRequest', [
+                'name'    => $domain_name,
+                'records' => [
+                    $operation => [$record],
+                ],
+            ]);
+            $this->logRequest($api);
+
+            // Openprovider requires at least one record to create a zone, so the first
+            // record added to a domain without a zone creates the zone
+            if (
+                $operation == 'add'
+                && $this->isFailedResponse($response)
+                && in_array($response->getCode(), $not_found_codes)
+            ) {
+                $response = $api->call('createZoneDnsRequest', [
+                    'domain'  => $this->splitDomainName($domain_name),
+                    'type'    => 'master',
+                    'records' => [$record],
+                ]);
+                $this->logRequest($api);
+                $error_key = 'zone_create_failed';
+            }
+
+            // The raw registrar error is kept in the module log; users get a generic message
+            if ($this->isFailedResponse($response)) {
+                $this->assignError($this->getDnsErrorMessage($error_key, $view));
+
+                $vars = (object) $post;
+            }
+        }
+
+        $zone_response = $api->call('retrieveZoneDnsRequest', [
+            'name'         => $domain_name,
+            'with_records' => true,
+            'with_history' => false,
+        ]);
+        $this->logRequest($api);
+
+        $zone_exists = false;
+        $zone_error = false;
+        $records = [];
+
+        if ($this->isFailedResponse($zone_response)) {
+            // Only a "zone not found" reply means the domain has no zone; any other
+            // failure (bad credentials, outage, timeout) must not be reported as a missing zone
+            if (!in_array($zone_response->getCode(), $not_found_codes)) {
+                $zone_error = true;
+                $this->assignError($this->getDnsErrorMessage('zone_retrieve_failed', $view));
+            }
+        } else {
+            $zone_exists = true;
+            $records = $zone_response->getData()['records'] ?? [];
+        }
+
+        $this->view->set('domain', $domain_name);
+        $this->view->set('zone_exists', $zone_exists);
+        $this->view->set('zone_error', $zone_error);
+        $this->view->set('records', $records);
+        $this->view->set('record_types', Configure::get('OpenProvider.dns_record_types'));
+        $this->view->set('nameservers', $nameservers);
+        $this->view->set('uses_op_nameservers', $this->usesOpenproviderNameservers($nameservers));
+
+        return $this->render($vars);
+    }
+
+    /**
+     * Checks whether an API response represents a failure
+     *
+     * Transport failures (timeouts, TLS errors) are returned with code 0 and only
+     * the exception message set, so the code alone cannot be trusted
+     *
+     * @param Response $response the API response
+     *
+     * @return bool true if the request failed
+     */
+    private function isFailedResponse(Response $response): bool
+    {
+        return $response->getCode() != 0 || $response->getMessage() != '';
+    }
+
+    /**
+     * Checks whether every given name server belongs to Openprovider
+     *
+     * @param array $nameservers the domain's current name server host names
+     *
+     * @return bool true if the domain delegates to Openprovider's name servers only
+     */
+    private function usesOpenproviderNameservers(array $nameservers): bool
+    {
+        $suffixes = Configure::get('OpenProvider.dns_nameserver_suffixes') ?? [];
+
+        if (empty($nameservers)) {
+            return false;
+        }
+
+        foreach ($nameservers as $nameserver) {
+            $nameserver = strtolower(rtrim(trim($nameserver), '.'));
+            $is_openprovider = false;
+
+            foreach ($suffixes as $suffix) {
+                if (substr($nameserver, -strlen('.' . $suffix)) == '.' . $suffix) {
+                    $is_openprovider = true;
+                    break;
+                }
+            }
+
+            if (!$is_openprovider) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    /**
+     * Builds the user-facing message for a failed DNS operation
+     *
+     * Staff are additionally pointed at the module log, which holds the raw registrar error
+     *
+     * @param string $key the language key suffix under OpenProvider.!error.dns
+     * @param string $view the view being rendered ('tab_dns' for staff, 'tab_client_dns' for clients)
+     *
+     * @return string the message
+     */
+    private function getDnsErrorMessage(string $key, string $view): string
+    {
+        $message = Language::_('OpenProvider.!error.dns.' . $key, true);
+
+        if ($view == 'tab_dns') {
+            $message .= ' ' . Language::_('OpenProvider.!error.dns.see_module_log', true);
+        }
+
+        return $message;
+    }
+
+    /**
+     * Builds a DNS record, as expected by OpenProvider, from the given form data
+     *
+     * @param array $post form data containing the record name, type, value, ttl and priority
+     * @param string $domain_name the domain the record belongs to
+     *
+     * @return array ['name', 'type', 'value', 'ttl', 'prio']
+     */
+    private function getDnsRecordFromPost(array $post, string $domain_name): array
+    {
+        $name = strtolower(trim($post['name'] ?? ''));
+        $domain_name = strtolower($domain_name);
+
+        // OpenProvider expects the fully qualified record name
+        if ($name == '' || $name == '@') {
+            $name = $domain_name;
+        } elseif ($name != $domain_name && substr($name, -strlen('.' . $domain_name)) != '.' . $domain_name) {
+            $name = $name . '.' . $domain_name;
+        }
+
+        // Fall back to the default TTL when the field is left blank
+        $ttl = trim($post['ttl'] ?? '');
+
+        $record = [
+            'name'  => $name,
+            'type'  => $post['type'] ?? '',
+            'value' => trim($post['value'] ?? ''),
+            'ttl'   => $ttl === '' ? 3600 : (int) $ttl,
+        ];
+
+        // A priority of 0 is valid for MX/SRV records, so only skip it when blank
+        $prio = trim($post['prio'] ?? '');
+        if ($prio !== '') {
+            $record['prio'] = (int) $prio;
+        }
+
+        return $record;
+    }
+
+    /**
+     * @param string $view view's name
+     * @param stdClass $package package row from database
+     * @param stdClass $service service row from database
+     * @param array|null $get if not null, method get data for this page NOT USED IN THIS METHOD
+     * @param array|null $post if not null, method update data loaded from form on this page
+     * @param array|null $files NOT USED IN THIS METHOD
+     *
+     * @return string|bool HTML generated by the view or FALSE if something went wrong
+     */
     private function manageSettings(
         $view,
         $package,
@@ -1561,14 +1922,20 @@ class Openprovider extends RegistrarModule
             return false;
         }
 
-        if (isset($op_domain['auth_code']) && $op_domain['auth_code']) {
+        // Determine if this service has access to epp_code and id_protection
+        $epp_code = $package->meta->epp_code ?? '0';
+        $id_protection = $this->featureServiceEnabled('id_protection', $service);
+
+        if ($epp_code && isset($op_domain['auth_code']) && $op_domain['auth_code']) {
             $vars->epp = $op_domain['auth_code'];
         }
 
         $vars->is_locked = isset($op_domain['is_locked']) && $op_domain['is_locked'] ? 'true' : 'false';
+        $vars->is_private_whois_enabled = isset($op_domain['is_private_whois_enabled'])
+            && $op_domain['is_private_whois_enabled'] ? 'true' : 'false';
 
         if ($post) {
-            if (isset($post['generate-new-epp']) && $post['generate-new-epp'] == 'true') {
+            if ($epp_code && isset($post['generate-new-epp']) && $post['generate-new-epp'] == 'true') {
                 $reset_auth_code_response = $api->call('resetAuthCodeDomainRequest', [
                     'id' => $op_domain['id'],
                 ]);
@@ -1596,9 +1963,43 @@ class Openprovider extends RegistrarModule
                     $vars->is_locked = isset($domain_transfer_lock) && $domain_transfer_lock ? 'true' : 'false';
                 }
             }
+
+            if ($id_protection && isset($post['private_whois']) && !empty($post['private_whois'])) {
+                $private_whois = $post['private_whois'] == 'true';
+
+                $update_private_whois_response = $this->setPrivateWhois($op_domain['id'], $private_whois, $api);
+
+                if ($update_private_whois_response->getCode() != 0) {
+                    $this->assignError($update_private_whois_response->getMessage());
+                } else {
+                    $vars->is_private_whois_enabled = $private_whois ? 'true' : 'false';
+                }
+            }
         }
 
+        $this->view->set('id_protection', $id_protection);
+
         return $this->render($vars);
+    }
+
+    /**
+     * Enables or disables WHOIS privacy for the given domain
+     *
+     * @param int $op_domain_id the OpenProvider domain id
+     * @param bool $enabled whether WHOIS privacy should be enabled
+     * @param OpenProviderApi $api
+     *
+     * @return Response
+     */
+    private function setPrivateWhois(int $op_domain_id, bool $enabled, OpenProviderApi $api): Response
+    {
+        $response = $api->call('modifyDomainRequest', [
+            'id' => $op_domain_id,
+            'is_private_whois_enabled' => $enabled,
+        ]);
+        $this->logRequest($api);
+
+        return $response;
     }
 
     /**
@@ -2054,6 +2455,43 @@ class Openprovider extends RegistrarModule
     }
 
     /**
+     * Fetches every TLD with its prices, following the pagination of the API
+     *
+     * @param OpenProviderApi $api
+     *
+     * @return array|null the list of TLDs, or null if a request failed
+     */
+    private function getExtensions(OpenProviderApi $api): ?array
+    {
+        $extensions = [];
+        $offset = 0;
+
+        do {
+            $extension_response = $api->call('searchExtensionRequest', [
+                'with_price' => true,
+                'limit'      => self::EXTENSIONS_PER_REQUEST,
+                'offset'     => $offset,
+            ]);
+            $this->logRequest($api);
+
+            if ($extension_response->getCode() != 0) {
+                $this->assignError($extension_response->getMessage());
+
+                return null;
+            }
+
+            $results = $extension_response->getData()['results'] ?? [];
+            $extensions = array_merge($extensions, $results);
+
+            // Advance by the number of results actually returned, the API may
+            // return fewer TLDs per request than the requested limit
+            $offset += count($results);
+        } while (!empty($results) && $offset < $extension_response->getTotal());
+
+        return $extensions;
+    }
+
+    /**
      * Retrieves all the Openprovider prices
      *
      * @param array $filters A list of criteria by which to filter fetched pricings including but not limited to:
@@ -2080,17 +2518,13 @@ class Openprovider extends RegistrarModule
             $row = $this->getRow();
             $api = $this->getApi($row->meta->username, $row->meta->password, $row->meta->test_mode == 'true');
 
-            $extension_response = $api->call('searchExtensionRequest', ['with_price' => true]);
-            $this->logRequest($api);
-
-            if ($extension_response->getCode() != 0) {
-                $this->assignError($extension_response->getMessage());
-
+            $extension_results = $this->getExtensions($api);
+            if (is_null($extension_results)) {
                 return [];
             }
 
             // Save the TLDs results to the cache
-            $result = $extension_response->getData();
+            $result = ['results' => $extension_results];
             if (Configure::get('Caching.on') && is_writable(CACHEDIR)) {
                 try {
                     Cache::writeCache(

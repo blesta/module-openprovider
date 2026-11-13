@@ -41,6 +41,28 @@ $this->Form->create(null, ['id' => 'tab-settings-form']);
         <?php $this->Form->fieldHidden('lock', '', ['id' => 'lock']); ?>
     </div>
 
+    <?php if ($id_protection ?? false) { ?>
+    <div class="mb-3">
+        <div class="form-check form-switch">
+            <?php $this->Form->fieldCheckbox(
+                'is_private_whois_enabled',
+                'true',
+                isset($vars->is_private_whois_enabled) ? $vars->is_private_whois_enabled == 'true' : false,
+                ['id' => 'is_private_whois_enabled', 'class' => 'form-check-input private-whois-switch'],
+            ); ?>
+            <?php $this->Form->label(
+                $this->_(
+                    'OpenProvider.tab_settings.field.private_whois' . '_' . $vars->is_private_whois_enabled,
+                    true
+                ),
+                'is_private_whois_enabled',
+                ['class' => 'form-check-label'],
+            ); ?>
+        </div>
+        <?php $this->Form->fieldHidden('private_whois', '', ['id' => 'private_whois']); ?>
+    </div>
+    <?php } ?>
+
     <?php $this->Form->end(); ?>
 </div>
 
@@ -50,7 +72,8 @@ $this->Form->create(null, ['id' => 'tab-settings-form']);
     var tooltip_el = document.querySelector('.generate-new-epp[data-bs-toggle="tooltip"]');
     if (tooltip_el) new bootstrap.Tooltip(tooltip_el);
 
-    document.querySelector('.show-hide-epp').addEventListener('click', function() {
+    var show_hide_epp_el = document.querySelector('.show-hide-epp');
+    if (show_hide_epp_el) show_hide_epp_el.addEventListener('click', function() {
         let icon = this.querySelector('i');
         if (icon.classList.contains('bi-eye')) {
             icon.classList.remove('bi-eye');
@@ -63,7 +86,8 @@ $this->Form->create(null, ['id' => 'tab-settings-form']);
         }
     });
 
-    document.querySelector('.generate-new-epp').addEventListener('click', function() {
+    var generate_new_epp_el = document.querySelector('.generate-new-epp');
+    if (generate_new_epp_el) generate_new_epp_el.addEventListener('click', function() {
         document.querySelector('input[name="generate-new-epp"]').value = 'true';
 
         let icon = this.querySelector('i');
@@ -82,6 +106,12 @@ $this->Form->create(null, ['id' => 'tab-settings-form']);
 
     document.querySelector('.is_locked-switch').addEventListener('click', function() {
         document.querySelector('input[name="lock"]').value = this.checked ? 'true' : 'false';
+        document.getElementById('tab-settings-form').submit();
+    });
+
+    var private_whois_el = document.querySelector('.private-whois-switch');
+    if (private_whois_el) private_whois_el.addEventListener('click', function() {
+        document.querySelector('input[name="private_whois"]').value = this.checked ? 'true' : 'false';
         document.getElementById('tab-settings-form').submit();
     });
 </script>
